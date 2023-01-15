@@ -113,9 +113,8 @@ for file in os.listdir(path):
         F_UNITDATA_L = f.read(4)
         F_UNITNAMES_L = f.read(4)
         F_CITYDATA_L = f.read(4)
-        if version >= 11:
-            F_VICTORYDATA_L = f.read(4)
-            F_GAMEOPTIONS_L = f.read(4)
+        F_VICTORYDATA_L = f.read(4)
+        F_GAMEOPTIONS_L = f.read(4)
         F_IMPROVEMENTS = f.read(int.from_bytes(F_IMPROVEMENTS_L, "little"))
         F_UNITS = f.read(int.from_bytes(F_UNITS_L, "little"))
         F_TECHS = f.read(int.from_bytes(F_TECHS_L, "little"))
@@ -125,9 +124,8 @@ for file in os.listdir(path):
         F_UNITDATA = f.read(int.from_bytes(F_UNITDATA_L, "little"))
         F_UNITNAMES = f.read(int.from_bytes(F_UNITNAMES_L, "little"))
         F_CITYDATA = f.read(int.from_bytes(F_CITYDATA_L, "little"))
-        if version >= 11:
-            F_VICTORYDATA = f.read(int.from_bytes(F_VICTORYDATA_L, "little"))
-            F_GAMEOPTIONS = f.read(int.from_bytes(F_GAMEOPTIONS_L, "little"))
+        F_VICTORYDATA = f.read(int.from_bytes(F_VICTORYDATA_L, "little"))
+        F_GAMEOPTIONS = f.read(int.from_bytes(F_GAMEOPTIONS_L, "little"))
         
         improvements = F_IMPROVEMENTS.split(b'\x00')[:-1]
         units = F_UNITS.split(b'\x00')[:-1]
@@ -138,9 +136,8 @@ for file in os.listdir(path):
         unit_data = F_UNITDATA
         unit_names = F_UNITNAMES
         city_data = F_CITYDATA
-        if version >= 11:
-            victory_data = F_VICTORYDATA
-            game_options = F_GAMEOPTIONS.split(b'\x00')[:-1]
+        victory_data = F_VICTORYDATA
+        game_options = F_GAMEOPTIONS.split(b'\x00')[:-1]
 
 
 

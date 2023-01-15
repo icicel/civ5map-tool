@@ -212,26 +212,28 @@ for file in os.listdir(path):
             neighbors_of_cityable.add(coords)
 
         if print_map:
-            terrain_graphical = "#%<*S~ "
+            # grassland, plains, desert, tundra, snow, coast, ocean
+            terrain_graphical = "#%:t,~ "
+            # ice, jungle, marsh, oasis, flood plains, forest, fallout, atoll, none
             feature_graphical = "IW@¤&^Xö "
-            elevation_graphical = " .o"
-            wonder_graphical = "$"
+            # flat, hill, mountain
+            elevation_graphical = " .A"
+            wonder_graphical = "*"
+            terrain_map = ""
+            feature_map = ""
+            elevation_map = ""
             for y in range(map_height):
                 for x in range(map_width):
-                    terrain = cells[(x, y)][0]
-                    print(terrain_graphical[terrain], end="")
-                print()
-            for y in range(map_height):
-                for x in range(map_width):
-                    feature = cells[(x, y)][2]
-                    print(feature_graphical[feature], end="")
-                print()
-            for y in range(map_height):
-                for x in range(map_width):
-                    elevation = cells[(x, y)][4]
-                    wonder = cells[(x, y)][6]
-                    print(elevation_graphical[elevation] if wonder == -1 else wonder_graphical, end="")
-                print()
+                    terrain, _, feature, _, elevation, _, wonder, _ = cells[(x, y)]
+                    terrain_map += terrain_graphical[terrain]
+                    feature_map += feature_graphical[feature]
+                    elevation_map += elevation_graphical[elevation] if wonder == -1 else wonder_graphical
+                terrain_map += "\n"
+                feature_map += "\n"
+                elevation_map += "\n"
+            print(terrain_map + "-" * map_width)
+            print(feature_map + "-" * map_width)
+            print(elevation_map + "-" * map_width)
 
         print(f"{len(cityable) + len(neighbors_of_cityable)}\t{file}")
 

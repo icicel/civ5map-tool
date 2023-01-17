@@ -40,7 +40,6 @@ for file in os.listdir(path):
         F_MAPHEIGHT = f.read(4)
         F_PLAYERS_C = f.read(1)
         F_SETTINGS = f.read(4)
-
         is_scenario, _, version = byte_groups(F_HEAD[0], [1, 3, 4])
         map_width = int.from_bytes(F_MAPWIDTH, "little")
         map_height = int.from_bytes(F_MAPHEIGHT, "little")
@@ -54,16 +53,21 @@ for file in os.listdir(path):
         F_MODDATA_L = f.read(4)
         F_MAPNAME_L = f.read(4)
         F_MAPDESC_L = f.read(4)
-        F_TERRAINS = f.read(int.from_bytes(F_TERRAINS_L, "little"))
-        F_FEATURES = f.read(int.from_bytes(F_FEATURES_L, "little"))
-        F_WONDERS = f.read(int.from_bytes(F_WONDERS_L, "little"))
-        F_RESOURCES = f.read(int.from_bytes(F_RESOURCES_L, "little"))
-        F_MODDATA = f.read(int.from_bytes(F_MODDATA_L, "little"))
-        F_MAPNAME = f.read(int.from_bytes(F_MAPNAME_L, "little"))
-        F_MAPDESC = f.read(int.from_bytes(F_MAPDESC_L, "little"))
-        F_WORLDSIZE_L = f.read(4)
-        F_WORLDSIZE = f.read(int.from_bytes(F_WORLDSIZE_L, "little"))
+        terrains_l = int.from_bytes(F_TERRAINS_L, "little")
+        features_l = int.from_bytes(F_FEATURES_L, "little")
+        wonders_l = int.from_bytes(F_WONDERS_L, "little")
+        resources_l = int.from_bytes(F_RESOURCES_L, "little")
+        mod_data_l = int.from_bytes(F_MODDATA_L, "little")
+        title_l = int.from_bytes(F_MAPNAME_L, "little")
+        description_l = int.from_bytes(F_MAPDESC_L, "little")
 
+        F_TERRAINS = f.read(terrains_l)
+        F_FEATURES = f.read(features_l)
+        F_WONDERS = f.read(wonders_l)
+        F_RESOURCES = f.read(resources_l)
+        F_MODDATA = f.read(mod_data_l)
+        F_MAPNAME = f.read(title_l)
+        F_MAPDESC = f.read(description_l)
         terrains = F_TERRAINS.split(b'\x00')[:-1]
         features = F_FEATURES.split(b'\x00')[:-1]
         wonders = F_WONDERS.split(b'\x00')[:-1]
@@ -71,10 +75,14 @@ for file in os.listdir(path):
         mod_data = F_MODDATA[:-1]
         title = F_MAPNAME[:-1]
         description = F_MAPDESC[:-1]
+
+        F_WORLDSIZE_L = f.read(4)
+        world_size_l = int.from_bytes(F_WORLDSIZE_L, "little")
+
+        F_WORLDSIZE = f.read(world_size_l)
         world_size = F_WORLDSIZE.strip(b'\x00')
 
         F_CELLS = f.read(map_height * map_width * 8)
-
         cells = {}
         c = 0
         for y in range(map_height):
@@ -96,7 +104,6 @@ for file in os.listdir(path):
         F_MINORCIVS_C = f.read(1)
         F_TEAMS_C = f.read(1)
         F_X3 = f.read(1)
-
         game_speed = F_GAMESPEED.strip(b'\x00')
         max_turns = int.from_bytes(F_MAXTURNS, "little")
         start_year = struct.unpack("l", F_STARTYEAR)[0]
@@ -115,18 +122,30 @@ for file in os.listdir(path):
         F_CITYDATA_L = f.read(4)
         F_VICTORYDATA_L = f.read(4)
         F_GAMEOPTIONS_L = f.read(4)
-        F_IMPROVEMENTS = f.read(int.from_bytes(F_IMPROVEMENTS_L, "little"))
-        F_UNITS = f.read(int.from_bytes(F_UNITS_L, "little"))
-        F_TECHS = f.read(int.from_bytes(F_TECHS_L, "little"))
-        F_POLICIES = f.read(int.from_bytes(F_POLICIES_L, "little"))
-        F_BUILDINGS = f.read(int.from_bytes(F_BUILDINGS_L, "little"))
-        F_PROMOTIONS = f.read(int.from_bytes(F_PROMOTIONS_L, "little"))
-        F_UNITDATA = f.read(int.from_bytes(F_UNITDATA_L, "little"))
-        F_UNITNAMES = f.read(int.from_bytes(F_UNITNAMES_L, "little"))
-        F_CITYDATA = f.read(int.from_bytes(F_CITYDATA_L, "little"))
-        F_VICTORYDATA = f.read(int.from_bytes(F_VICTORYDATA_L, "little"))
-        F_GAMEOPTIONS = f.read(int.from_bytes(F_GAMEOPTIONS_L, "little"))
-        
+        improvements_l = int.from_bytes(F_IMPROVEMENTS_L, "little")
+        units_l = int.from_bytes(F_UNITS_L, "little")
+        techs_l = int.from_bytes(F_TECHS_L, "little")
+        policies_l = int.from_bytes(F_POLICIES_L, "little")
+        buildings_l = int.from_bytes(F_BUILDINGS_L, "little")
+        promotions_l = int.from_bytes(F_PROMOTIONS_L, "little")
+        unit_data_l = int.from_bytes(F_UNITDATA_L, "little")
+        unit_names_l = int.from_bytes(F_UNITNAMES_L, "little")
+        city_data_l = int.from_bytes(F_CITYDATA_L, "little")
+        victory_data_l = int.from_bytes(F_VICTORYDATA_L, "little")
+        game_options_l = int.from_bytes(F_GAMEOPTIONS_L, "little")
+
+        F_IMPROVEMENTS = f.read(improvements_l)
+        F_UNITS = f.read(units_l)
+        F_TECHS = f.read(techs_l)
+        F_POLICIES = f.read(policies_l)
+        F_BUILDINGS = f.read(buildings_l)
+        F_PROMOTIONS = f.read(promotions_l)
+        F_X4 = f.read(4) if unit_data_l else b''
+        F_UNITDATA = f.read(unit_data_l)
+        F_UNITNAMES = f.read(unit_names_l)
+        F_CITYDATA = f.read(city_data_l)
+        F_VICTORYDATA = f.read(victory_data_l)
+        F_GAMEOPTIONS = f.read(game_options_l)
         improvements = F_IMPROVEMENTS.split(b'\x00')[:-1]
         units = F_UNITS.split(b'\x00')[:-1]
         techs = F_TECHS.split(b'\x00')[:-1]

@@ -87,9 +87,10 @@ for file in os.listdir(path):
         c = 0
         for y in range(map_height):
             for x in range(map_width):
-                terrain, resource, feature, river, elevation, continent, wonder, resource_c = struct.unpack("8b", F_CELLS[c:c+8])
-                cells[(x, y)] = (terrain, resource, feature, river, elevation, continent, wonder, resource_c)
+                cell = F_CELLS[c:c+8]
                 c += 8
+                terrain, resource, feature, river, elevation, continent, wonder, resource_c = struct.unpack("8b", cell)
+                cells[(x, y)] = (terrain, resource, feature, river, elevation, continent, wonder, resource_c)
 
 
 

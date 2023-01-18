@@ -16,6 +16,17 @@ def byte_groups(byte, groups):
         parts.append(byte & 2**n - 1)
         byte >>= n
     return parts[::-1]
+def get_structs_of_size(byte_string, size):
+    structs = []
+    for i in range(0, len(byte_string), size):
+        n = byte_string[i:i+size]
+        if len(n) != size:
+            print("uh oh")
+            break
+        structs.append(byte_string[i:i+size])
+    return structs
+def strip_at_first_null(byte_string):
+    return byte_string.split(b'\x00')[0]
 def get_neighbors(coords):
     x, y = coords
     if y % 2: # odd
@@ -51,30 +62,30 @@ for file in os.listdir(path):
         F_WONDERS_L = f.read(4)
         F_RESOURCES_L = f.read(4)
         F_MODDATA_L = f.read(4)
-        F_MAPNAME_L = f.read(4)
-        F_MAPDESC_L = f.read(4)
+        F_TITLE_L = f.read(4)
+        F_DESCRIPTION_L = f.read(4)
         terrains_l = int.from_bytes(F_TERRAINS_L, "little")
         features_l = int.from_bytes(F_FEATURES_L, "little")
         wonders_l = int.from_bytes(F_WONDERS_L, "little")
         resources_l = int.from_bytes(F_RESOURCES_L, "little")
         mod_data_l = int.from_bytes(F_MODDATA_L, "little")
-        title_l = int.from_bytes(F_MAPNAME_L, "little")
-        description_l = int.from_bytes(F_MAPDESC_L, "little")
+        title_l = int.from_bytes(F_TITLE_L, "little")
+        description_l = int.from_bytes(F_DESCRIPTION_L, "little")
 
         F_TERRAINS = f.read(terrains_l)
         F_FEATURES = f.read(features_l)
         F_WONDERS = f.read(wonders_l)
         F_RESOURCES = f.read(resources_l)
         F_MODDATA = f.read(mod_data_l)
-        F_MAPNAME = f.read(title_l)
-        F_MAPDESC = f.read(description_l)
+        F_TITLE = f.read(title_l)
+        F_DESCRIPTION = f.read(description_l)
         terrains = F_TERRAINS.split(b'\x00')[:-1]
         features = F_FEATURES.split(b'\x00')[:-1]
         wonders = F_WONDERS.split(b'\x00')[:-1]
         resources = F_RESOURCES.split(b'\x00')[:-1]
         mod_data = F_MODDATA[:-1]
-        title = F_MAPNAME[:-1]
-        description = F_MAPDESC[:-1]
+        title = F_TITLE[:-1]
+        description = F_DESCRIPTION[:-1]
 
         F_WORLDSIZE_L = f.read(4)
         world_size_l = int.from_bytes(F_WORLDSIZE_L, "little")
@@ -113,7 +124,7 @@ for file in os.listdir(path):
         num_teams = int.from_bytes(F_TEAMS_C, "little")
 
         F_IMPROVEMENTS_L = f.read(4)
-        F_UNITS_L = f.read(4)
+        F_UNITTYPES_L = f.read(4)
         F_TECHS_L = f.read(4)
         F_POLICIES_L = f.read(4)
         F_BUILDINGS_L = f.read(4)
@@ -124,7 +135,7 @@ for file in os.listdir(path):
         F_VICTORYDATA_L = f.read(4)
         F_GAMEOPTIONS_L = f.read(4)
         improvements_l = int.from_bytes(F_IMPROVEMENTS_L, "little")
-        units_l = int.from_bytes(F_UNITS_L, "little")
+        unit_types_l = int.from_bytes(F_UNITTYPES_L, "little")
         techs_l = int.from_bytes(F_TECHS_L, "little")
         policies_l = int.from_bytes(F_POLICIES_L, "little")
         buildings_l = int.from_bytes(F_BUILDINGS_L, "little")
@@ -136,27 +147,47 @@ for file in os.listdir(path):
         game_options_l = int.from_bytes(F_GAMEOPTIONS_L, "little")
 
         F_IMPROVEMENTS = f.read(improvements_l)
-        F_UNITS = f.read(units_l)
+        F_UNITTYPES = f.read(unit_types_l)
         F_TECHS = f.read(techs_l)
         F_POLICIES = f.read(policies_l)
         F_BUILDINGS = f.read(buildings_l)
         F_PROMOTIONS = f.read(promotions_l)
         F_X4 = f.read(4) if unit_data_l else b''
-        F_UNITDATA = f.read(unit_data_l)
-        F_UNITNAMES = f.read(unit_names_l)
-        F_CITYDATA = f.read(city_data_l)
+        F_UNITDATA = f.read(unit_data_l - 4) if unit_data_l else b''
+        F_X5 = f.read(4) if unit_names_l else b''
+        F_UNITNAMES = f.read(unit_names_l - 4) if unit_names_l else b''
+        F_X6 = f.read(4) if city_data_l else b''
+        F_CITYDATA = f.read(city_data_l - 4) if city_data_l else b''
         F_VICTORYDATA = f.read(victory_data_l)
         F_GAMEOPTIONS = f.read(game_options_l)
         improvements = F_IMPROVEMENTS.split(b'\x00')[:-1]
-        units = F_UNITS.split(b'\x00')[:-1]
+        unit_types = F_UNITTYPES.split(b'\x00')[:-1]
         techs = F_TECHS.split(b'\x00')[:-1]
         policies = F_POLICIES.split(b'\x00')[:-1]
         buildings = F_BUILDINGS.split(b'\x00')[:-1]
         promotions = F_PROMOTIONS.split(b'\x00')[:-1]
-        unit_data = F_UNITDATA
-        unit_names = F_UNITNAMES
-        city_data = F_CITYDATA
-        victory_data = F_VICTORYDATA
+        units = []
+        unit_l = 48 if version == 11 else 84
+        for unit in get_structs_of_size(F_UNITDATA, unit_l):
+            if version == 12:
+                x1, name_index, xp, health, unit_type, owner, facing, status, x2, promotion = struct.unpack("2shLLLBBBc64s", unit)
+            elif version == 11:
+                x1, name_index, xp, health, unit_type, owner, facing, status, promotion = struct.unpack("2shLLBBBB32s", unit)
+                x2 = None
+            units.append((x1, name_index, xp, health, unit_type, owner, facing, status, x2, promotion))
+        unit_names = []
+        unit_name_l = 64
+        for unit_name in get_structs_of_size(F_UNITNAMES, unit_name_l):
+            unit_names.append(strip_at_first_null(unit_name))
+        cities = []
+        city_l = 104 if version == 11 else 136
+        for city in get_structs_of_size(F_CITYDATA, city_l):
+            if version == 12:
+                city_name, owner, city_settings, population, health, building_data = struct.unpack("64sBBHL64s", city)
+            elif version == 11:
+                city_name, owner, city_settings, population, health, building_data = struct.unpack("64sBBHL32s", city)
+            cities.append((strip_at_first_null(city_name), owner, city_settings, population, health, building_data))
+        victory_data = F_VICTORYDATA.split(b'\x00')[:-1]
         game_options = F_GAMEOPTIONS.split(b'\x00')[:-1]
 
 
@@ -171,8 +202,8 @@ for file in os.listdir(path):
         if print_scenario_info:
             print(
                 f"{game_speed=}\n{max_turns=}\n{start_year=}\n{num_player_civs=}\n{num_minor_civs=}\n{num_teams=}\n"
-                f"{improvements=}\n{units=}\n{techs=}\n{policies=}\n{buildings=}\n{promotions=}\n{unit_data=}\n{unit_names=}\n{city_data=}\n"
-                f"{victory_data=}\n{game_options=}\n"
+                f"{improvements=}\n{unit_types=}\n{techs=}\n{policies=}\n{buildings=}\n{promotions=}\n"
+                f"{units=}\n{unit_names=}\n{cities=}\n{victory_data=}\n{game_options=}\n"
             )
 
         def place_coast(filter, chance_for_ocean):

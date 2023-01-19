@@ -1,48 +1,21 @@
+import struct
 
-all_maps = False
-specific_map = "Sven's Europe v1.5 (Standard)"
+# Help functions
 
-print_map_info = True
-print_scenario_info = True
-print_map = False
-output = False
-
-import os, struct, random
-path = "C://Users//isakh//Documents//My Games//Sid Meier's Civilization 5//Maps//"
-c = 0
-def byte_groups(byte, groups):
-    parts = []
-    for n in reversed(groups):
-        parts.append(byte & 2**n - 1)
-        byte >>= n
-    return parts[::-1]
 def get_structs_of_size(byte_string, size):
+    if len(byte_string) % size != 0:
+        raise ValueError("Byte string of length", len(byte_string), "can not be composed of structs of size", size)
     structs = []
     for i in range(0, len(byte_string), size):
-        n = byte_string[i:i+size]
-        if len(n) != size:
-            print("uh oh")
-            break
         structs.append(byte_string[i:i+size])
     return structs
 def strip_at_first_null(byte_string):
     return byte_string.split(b'\x00')[0]
-def get_neighbors(coords):
-    x, y = coords
-    if y % 2: # odd
-        neighbors = [(x+1, y), (x-1, y), (x, y+1), (x, y-1), (x+1, y+1), (x+1, y-1)]
-    else: # even
-        neighbors = [(x+1, y), (x-1, y), (x, y+1), (x, y-1), (x-1, y+1), (x-1, y-1)]
-    return [n for n in neighbors if is_valid(n)]
-def is_valid(coords):
-    x, y = coords
-    return x >= 0 and y >= 0 and x < map_width and y < map_height
-for file in os.listdir(path):
-    if file[-8:] != ".Civ5Map":
-        continue
-    if not all_maps and file[:-8] != specific_map:
-        continue
-    with open(path + file, "rb") as f:
+
+# File handler (I think)
+
+class DecodeMap:
+    def __init__(self, f):
 
         ### Read map data
 
@@ -51,11 +24,14 @@ for file in os.listdir(path):
         F_MAPHEIGHT = f.read(4)
         F_PLAYERS_C = f.read(1)
         F_SETTINGS = f.read(4)
-        is_scenario, _, version = byte_groups(F_HEAD[0], [1, 3, 4])
+        is_scenario = F_HEAD[0] & 0b10000000 >> 7
+        version = F_HEAD[0] & 0b00001111
         map_width = int.from_bytes(F_MAPWIDTH, "little")
         map_height = int.from_bytes(F_MAPHEIGHT, "little")
         num_players = int.from_bytes(F_PLAYERS_C, "little")
-        _, world_wrap, random_resources, random_goodies = byte_groups(F_SETTINGS[0], [5, 1, 1, 1])
+        world_wrap = F_SETTINGS[0] & 0b00000100 >> 2
+        random_resources = F_SETTINGS[0] & 0b00000010 >> 1
+        random_goodies = F_SETTINGS[0] & 0b00000001
 
         F_TERRAINS_L = f.read(4)
         F_FEATURES_L = f.read(4)
@@ -108,14 +84,14 @@ for file in os.listdir(path):
         ### Read scenario data
 
         F_GAMESPEED = f.read(64)
-        F_X1 = f.read(4)
+        f.read(4)
         F_MAXTURNS = f.read(4)
-        F_X2 = f.read(4)
+        f.read(4)
         F_STARTYEAR = f.read(4)
         F_PLAYERCIVS_C = f.read(1)
         F_MINORCIVS_C = f.read(1)
         F_TEAMS_C = f.read(1)
-        F_X3 = f.read(1)
+        f.read(1)
         game_speed = F_GAMESPEED.strip(b'\x00')
         max_turns = int.from_bytes(F_MAXTURNS, "little")
         start_year = struct.unpack("l", F_STARTYEAR)[0]
@@ -152,12 +128,9 @@ for file in os.listdir(path):
         F_POLICIES = f.read(policies_l)
         F_BUILDINGS = f.read(buildings_l)
         F_PROMOTIONS = f.read(promotions_l)
-        F_X4 = f.read(4) if unit_data_l else b''
-        F_UNITDATA = f.read(unit_data_l - 4) if unit_data_l else b''
-        F_X5 = f.read(4) if unit_names_l else b''
-        F_UNITNAMES = f.read(unit_names_l - 4) if unit_names_l else b''
-        F_X6 = f.read(4) if city_data_l else b''
-        F_CITYDATA = f.read(city_data_l - 4) if city_data_l else b''
+        F_UNITDATA = f.read(unit_data_l)[4:] if unit_data_l else b''
+        F_UNITNAMES = f.read(unit_names_l)[4:] if unit_names_l else b''
+        F_CITYDATA = f.read(city_data_l)[4:] if city_data_l else b''
         F_VICTORYDATA = f.read(victory_data_l)
         F_GAMEOPTIONS = f.read(game_options_l)
         improvements = F_IMPROVEMENTS.split(b'\x00')[:-1]
@@ -192,101 +165,41 @@ for file in os.listdir(path):
 
 
 
-        
-        if print_map_info:
-            print(
-                f"{is_scenario=}\n{version=}\n{map_width=}\n{map_height=}\n{num_players=}\n{world_wrap=}\n{random_resources=}\n{random_goodies=}\n"
-                f"{terrains=}\n{features=}\n{wonders=}\n{resources=}\n{mod_data=}\n{title=}\n{description=}\n{world_size=}\n"
-                f"first cell={cells[(0, 0)]}\nlast cell={cells[(map_width-1, map_height-1)]}"
-            )
-        if print_scenario_info:
-            print(
-                f"{game_speed=}\n{max_turns=}\n{start_year=}\n{num_player_civs=}\n{num_minor_civs=}\n{num_teams=}\n"
-                f"{improvements=}\n{unit_types=}\n{techs=}\n{policies=}\n{buildings=}\n{promotions=}\n"
-                f"{units=}\n{unit_names=}\n{cities=}\n{victory_data=}\n{game_options=}\n"
-            )
+        ### Holy shit
 
-        def place_coast(filter, chance_for_ocean):
-            new_cells = {}
-            for coords, cell in cells.items():
-                terrain, *other = cell
-                if terrain not in filter:
-                    new_cells[coords] = cell
-                    continue
-                for n in get_neighbors(coords):
-                    if cells[n][0] not in filter:
-                        break
-                else:
-                    new_cells[coords] = (6, *other)
-                    continue
-                if random.random() < chance_for_ocean:
-                    new_cells[coords] = (6, *other)
-                    continue
-                new_cells[coords] = (5, *other)
-            return new_cells
-        cells = place_coast([5, 6], 0)
-        #cells = place_coast([6], 0)
-        # cells = place_coast([6], 0.5)
-        # cells = place_coast([6], 0.75)
+        self.is_scenario = is_scenario
+        self.version = version
+        self.map_width = map_width
+        self.map_height = map_height
+        self.num_players = num_players
+        self.world_wrap = world_wrap
+        self.random_resources = random_resources
+        self.random_goodies = random_goodies
+        self.terrains = terrains
+        self.features = features
+        self.wonders = wonders
+        self.resources = resources
+        self.mod_data = mod_data
+        self.title = title
+        self.description = description
+        self.world_size = world_size
+        self.cells = cells
+        self.game_speed = game_speed
+        self.max_turns = max_turns
+        self.start_year = start_year
+        self.num_player_civs = num_player_civs
+        self.num_minor_civs = num_minor_civs
+        self.num_teams = num_teams
+        self.improvements = improvements
+        self.unit_types = unit_types
+        self.techs = techs
+        self.policies = policies
+        self.buildings = buildings
+        self.promotions = promotions
+        self.units = units
+        self.unit_names = unit_names
+        self.cities = cities
+        self.victory_data = victory_data
+        self.game_options = game_options
 
-        cityable = set()
-        for coords, cell in cells.items():
-            terrain, _, feature, _, elevation, *_ = cell
-            if terrain in [2, 4] and elevation == 0: # desert, snow, flat
-                continue
-            if terrain in [5, 6]: # coast, ocean
-                continue
-            if feature in [0, 6]: # ice, fallout
-                continue
-            if elevation == 2: # mountain
-                continue
-            cityable.add(coords)
-        neighbors_of_cityable = set()
-        for coords, cell in cells.items():
-            if coords in cityable:
-                continue
-            terrain, _, feature, _, elevation, *_ = cell
-            if terrain in [5, 6]: # coast, ocean
-                continue
-            if feature in [0, 6]: # ice, fallout
-                continue
-            if elevation == 2: # mountain
-                continue
-            for neighbor in get_neighbors(coords):
-                if neighbor in cityable or cells[neighbor][0] == 5 or cells[neighbor][6] != -1: # cityable, coast, wonder
-                    break
-            else:
-                continue
-            neighbors_of_cityable.add(coords)
 
-        if print_map:
-            # grassland, plains, desert, tundra, snow, coast, ocean
-            terrain_graphical = "#%:t,~ "
-            # ice, jungle, marsh, oasis, flood plains, forest, fallout, atoll, none
-            feature_graphical = "IW@¤&^Xö "
-            # flat, hill, mountain
-            elevation_graphical = " .A"
-            wonder_graphical = "*"
-            terrain_map = ""
-            feature_map = ""
-            elevation_map = ""
-            for y in range(map_height):
-                for x in range(map_width):
-                    terrain, _, feature, _, elevation, _, wonder, _ = cells[(x, y)]
-                    terrain_map += terrain_graphical[terrain]
-                    feature_map += feature_graphical[feature]
-                    elevation_map += elevation_graphical[elevation] if wonder == -1 else wonder_graphical
-                terrain_map += "\n"
-                feature_map += "\n"
-                elevation_map += "\n"
-            print(terrain_map + "-" * map_width)
-            print(feature_map + "-" * map_width)
-            print(elevation_map + "-" * map_width)
-
-        print(f"{len(cityable) + len(neighbors_of_cityable)}\t{file}")
-
-        if not output:
-            continue
-
-        with open(path + file, "wb") as f:
-            f.write(F_HEAD)

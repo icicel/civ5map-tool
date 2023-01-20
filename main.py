@@ -74,7 +74,7 @@ for file in os.listdir(path):
 
         cityable = set()
         for coords, cell in cells.items():
-            terrain, _, feature, _, elevation, *_ = cell
+            terrain, _, feature, _, _, elevation, *_ = cell
             if terrain in [2, 4] and elevation == 0: # desert, snow, flat
                 continue
             if terrain in [5, 6]: # coast, ocean
@@ -88,7 +88,7 @@ for file in os.listdir(path):
         for coords, cell in cells.items():
             if coords in cityable:
                 continue
-            terrain, _, feature, _, elevation, *_ = cell
+            terrain, _, feature, _, _, elevation, *_ = cell
             if terrain in [5, 6]: # coast, ocean
                 continue
             if feature in [0, 6]: # ice, fallout
@@ -115,7 +115,7 @@ for file in os.listdir(path):
             elevation_map = ""
             for y in range(m.map_height):
                 for x in range(m.map_width):
-                    terrain, _, feature, _, elevation, _, wonder, _ = cells[(x, y)]
+                    terrain, _, feature, _, _, elevation, _, wonder, _ = cells[(x, y)]
                     terrain_map += terrain_graphical[terrain]
                     feature_map += feature_graphical[feature]
                     elevation_map += elevation_graphical[elevation] if wonder == -1 else wonder_graphical

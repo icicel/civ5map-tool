@@ -76,8 +76,10 @@ class DecodeMap:
             for x in range(map_width):
                 cell = F_CELLS[c:c+8]
                 c += 8
-                terrain, resource, feature, river, elevation, continent, wonder, resource_c = struct.unpack("8b", cell)
-                cells[(x, y)] = (terrain, resource, feature, river, elevation, continent, wonder, resource_c)
+                terrain, resource, feature, bitmap, elevation, continent, wonder, resource_c = struct.unpack("8B", cell)
+                river = bitmap & 0b00000111
+                start_position = bitmap & 0b11000000 >> 6
+                cells[(x, y)] = (terrain, resource, feature, start_position, river, elevation, continent, wonder, resource_c)
 
 
 

@@ -143,11 +143,10 @@ class DecodeMap:
         unit_l = 48 if version == 11 else 84
         for unit in get_structs_of_size(F_UNITDATA, unit_l):
             if version == 12:
-                x1, name_index, xp, health, unit_type, owner, facing, status, x2, promotion = struct.unpack("2shLLLBBBc64s", unit)
+                _, name_index, xp, health, unit_type, owner, facing, status, _, promotion = struct.unpack("2shLLLBBBc64s", unit)
             elif version == 11:
-                x1, name_index, xp, health, unit_type, owner, facing, status, promotion = struct.unpack("2shLLBBBB32s", unit)
-                x2 = None
-            units.append((x1, name_index, xp, health, unit_type, owner, facing, status, x2, promotion))
+                _, name_index, xp, health, unit_type, owner, facing, status, promotion = struct.unpack("2shLLBBBB32s", unit)
+            units.append((name_index, xp, health, unit_type, owner, facing, status, promotion))
         unit_names = []
         unit_name_l = 64
         for unit_name in get_structs_of_size(F_UNITNAMES, unit_name_l):

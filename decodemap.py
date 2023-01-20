@@ -160,8 +160,12 @@ class DecodeMap:
             elif version == 11:
                 city_name, owner, city_settings, population, health, building_data = struct.unpack("64sBBHL32s", city)
             cities.append((strip_at_first_null(city_name), owner, city_settings, population, health, building_data))
-        victory_data = F_VICTORYDATA.split(b'\x00')[:-1]
-        game_options = F_GAMEOPTIONS.split(b'\x00')[:-1]
+        victory_data = []
+        for victory in F_VICTORYDATA.split(b'\x00')[:-1]:
+            victory_data.append((victory[0], victory[1:]))
+        game_options = []
+        for option in F_GAMEOPTIONS.split(b'\x00')[:-1]:
+            game_options.append((option[0], option[1:]))
 
 
 

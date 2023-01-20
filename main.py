@@ -131,5 +131,6 @@ for file in os.listdir(path):
         if not output:
             continue
 
-        with open(path + file, "wb") as f:
-            m.encode(f)
+        with open(path + file + "bruh.Civ5Map", "wb") as f:
+            mf = m.encode()
+            f.write(mf)

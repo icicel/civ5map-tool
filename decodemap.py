@@ -208,3 +208,108 @@ class DecodeMap:
         self.game_options = game_options
 
 
+    def encode(self):
+
+        f = b''
+        f += (self.is_scenario << 7 | self.version).to_bytes(1, "little")
+        f += self.map_width.to_bytes(4, "little")
+        f += self.map_height.to_bytes(4, "little")
+        f += self.num_players.to_bytes(1, "little")
+        f += (self.world_wrap << 2 | self.random_resources << 1 | self.random_goodies).to_bytes(1, "little")
+
+        terrains = b''.join([b + b'\x00' for b in self.terrains])
+        features = b''.join([b + b'\x00' for b in self.features])
+        wonders = b''.join([b + b'\x00' for b in self.wonders])
+        resources = b''.join([b + b'\x00' for b in self.resources])
+        mod_data = self.mod_data + (b'\x00' if self.mod_data else b'')
+        title = self.title + b'\x00'
+        description = self.description + b'\x00'
+        f += len(terrains).to_bytes(4, "big")
+        f += len(features).to_bytes(4, "big")
+        f += len(wonders).to_bytes(4, "big")
+        f += len(resources).to_bytes(4, "big")
+        f += len(mod_data).to_bytes(4, "big")
+        f += len(title).to_bytes(4, "big")
+        f += len(description).to_bytes(4, "big")
+        f += terrains
+        f += features
+        f += wonders
+        f += resources
+        f += mod_data
+        f += title
+        f += description
+
+        world_size = self.world_size + b'\x00'
+        f += len(world_size).to_bytes(4, "little")
+        f += world_size
+
+        cells = b''
+        for y in range(self.map_height):
+            for x in range(self.map_width):
+                terrain, resource, feature, start_position, river, elevation, continent, wonder, resource_c = self.cells[(x, y)]
+                bitmap = start_position << 6 | river
+                cells += struct.pack("8B", terrain, resource, feature, bitmap, elevation, continent, wonder, resource_c)
+        f += cells
+
+        f += self.game_speed + (b'\x00' * (64 - len(self.game_speed)))
+        f += b'\x00' * 4
+        f += self.max_turns.to_bytes(4, "little")
+        f += b'\x00' * 4
+        f += struct.pack("l", self.start_year)
+        f += self.num_player_civs.to_bytes(1, "little")
+        f += self.num_minor_civs.to_bytes(1, "little")
+        f += self.num_teams.to_bytes(1, "little")
+        f += b'\x00'
+
+        improvements = b''.join([b + b'\x00' for b in self.improvements])
+        unit_types = b''.join([b + b'\x00' for b in self.unit_types])
+        techs = b''.join([b + b'\x00' for b in self.techs])
+        policies = b''.join([b + b'\x00' for b in self.policies])
+        buildings = b''.join([b + b'\x00' for b in self.buildings])
+        promotions = b''.join([b + b'\x00' for b in self.promotions])
+        units = b''
+        for name_index, xp, health, unit_type, owner, facing, status, promotion in self.units:
+            if self.version == 12:
+                units += struct.pack("xxhLLLBBBx64s", name_index, xp, health, unit_type, owner, facing, status, promotion)
+            elif self.version == 11:
+                units += struct.pack("xxhLLBBBB32s", name_index, xp, health, unit_type, owner, facing, status, promotion)
+        unit_names = b''
+        for unit_name in self.unit_names:
+            unit_names += unit_name + (b'\x00' * (64 - len(unit_name)))
+        cities = b''
+        for city_name, owner, city_settings, population, health, building_data in self.cities:
+            city_name = city_name + (b'\x00' * (64 - len(city_name)))
+            if self.version == 12:
+                cities += struct.pack("64sBBHL64s", city_name, owner, city_settings, population, health, building_data)
+            elif self.version == 11:
+                cities += struct.pack("64sBBHL32s", city_name, owner, city_settings, population, health, building_data)
+        victory_data = b''
+        for data, victory_type in self.victory_data:
+            victory_data += data.to_bytes(1, "little") + victory_type
+        game_options = b''
+        for data, option in self.game_options:
+            game_options += data.to_bytes(1, "little") + option
+        f += len(improvements).to_bytes(4, "little")
+        f += len(unit_types).to_bytes(4, "little")
+        f += len(techs).to_bytes(4, "little")
+        f += len(policies).to_bytes(4, "little")
+        f += len(buildings).to_bytes(4, "little")
+        f += len(promotions).to_bytes(4, "little")
+        f += len(units).to_bytes(4, "little")
+        f += len(unit_names).to_bytes(4, "little")
+        f += len(cities).to_bytes(4, "little")
+        f += len(victory_data).to_bytes(4, "little")
+        f += len(game_options).to_bytes(4, "little")
+        f += improvements
+        f += unit_types
+        f += techs
+        f += policies
+        f += buildings
+        f += promotions
+        f += units
+        f += unit_names
+        f += cities
+        f += victory_data
+        f += game_options
+
+        return f + self.rest

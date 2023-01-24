@@ -1,4 +1,5 @@
 import struct
+debug = True
 
 # Help functions
 
@@ -86,14 +87,14 @@ class DecodeMap:
         ### Read scenario data
 
         F_GAMESPEED = f.read(64)
-        f.read(4)
+        F_X1 = f.read(4)
         F_MAXTURNS = f.read(4)
-        f.read(4)
+        F_X2 = f.read(4)
         F_STARTYEAR = f.read(4)
         F_PLAYERCIVS_C = f.read(1)
         F_MINORCIVS_C = f.read(1)
         F_TEAMS_C = f.read(1)
-        f.read(1)
+        F_X3 = f.read(1)
         game_speed = F_GAMESPEED.strip(b'\x00')
         max_turns = int.from_bytes(F_MAXTURNS, "little")
         start_year = struct.unpack("l", F_STARTYEAR)[0]
@@ -168,6 +169,9 @@ class DecodeMap:
         for option in F_GAMEOPTIONS.split(b'\x00')[:-1]:
             game_options.append((option[0], option[1:]))
 
+        F_REST = f.read()
+        rest = F_REST
+
 
 
         ### Holy shit
@@ -206,16 +210,29 @@ class DecodeMap:
         self.cities = cities
         self.victory_data = victory_data
         self.game_options = game_options
+        
+        
+        self.rest = rest
+        self.file = (
+            F_HEAD, F_MAPWIDTH, F_MAPHEIGHT, F_PLAYERS_C, F_SETTINGS, F_TERRAINS_L, F_FEATURES_L, F_WONDERS_L, 
+            F_RESOURCES_L, F_MODDATA_L, F_TITLE_L, F_DESCRIPTION_L, F_TERRAINS, F_FEATURES, F_WONDERS, F_RESOURCES, 
+            F_MODDATA, F_TITLE, F_DESCRIPTION, F_WORLDSIZE_L, F_WORLDSIZE, F_CELLS, F_GAMESPEED, F_X1, F_MAXTURNS, F_X2, 
+            F_STARTYEAR, F_PLAYERCIVS_C, F_MINORCIVS_C, F_TEAMS_C, F_X3, F_IMPROVEMENTS_L, F_UNITTYPES_L, F_TECHS_L, 
+            F_POLICIES_L, F_BUILDINGS_L, F_PROMOTIONS_L, F_UNITDATA_L, F_UNITNAMES_L, F_CITYDATA_L, 
+            F_VICTORYDATA_L, F_GAMEOPTIONS_L, F_IMPROVEMENTS, F_UNITTYPES, F_TECHS, F_POLICIES, F_BUILDINGS, 
+            F_PROMOTIONS, F_UNITDATA, F_UNITNAMES, F_CITYDATA, F_VICTORYDATA, F_GAMEOPTIONS, F_REST
+        )
 
 
     def encode(self):
 
-        f = b''
-        f += (self.is_scenario << 7 | self.version).to_bytes(1, "little")
-        f += self.map_width.to_bytes(4, "little")
-        f += self.map_height.to_bytes(4, "little")
-        f += self.num_players.to_bytes(1, "little")
-        f += (self.world_wrap << 2 | self.random_resources << 1 | self.random_goodies).to_bytes(1, "little")
+        f = []
+
+        f.append((self.is_scenario << 7 | self.version).to_bytes(1, "little"))
+        f.append(self.map_width.to_bytes(4, "little"))
+        f.append(self.map_height.to_bytes(4, "little"))
+        f.append(self.num_players.to_bytes(1, "little"))
+        f.append((self.world_wrap << 2 | self.random_resources << 1 | self.random_goodies).to_bytes(1, "little"))
 
         terrains = b''.join([b + b'\x00' for b in self.terrains])
         features = b''.join([b + b'\x00' for b in self.features])
@@ -224,24 +241,24 @@ class DecodeMap:
         mod_data = self.mod_data + (b'\x00' if self.mod_data else b'')
         title = self.title + b'\x00'
         description = self.description + b'\x00'
-        f += len(terrains).to_bytes(4, "big")
-        f += len(features).to_bytes(4, "big")
-        f += len(wonders).to_bytes(4, "big")
-        f += len(resources).to_bytes(4, "big")
-        f += len(mod_data).to_bytes(4, "big")
-        f += len(title).to_bytes(4, "big")
-        f += len(description).to_bytes(4, "big")
-        f += terrains
-        f += features
-        f += wonders
-        f += resources
-        f += mod_data
-        f += title
-        f += description
+        f.append(len(terrains).to_bytes(4, "big"))
+        f.append(len(features).to_bytes(4, "big"))
+        f.append(len(wonders).to_bytes(4, "big"))
+        f.append(len(resources).to_bytes(4, "big"))
+        f.append(len(mod_data).to_bytes(4, "big"))
+        f.append(len(title).to_bytes(4, "big"))
+        f.append(len(description).to_bytes(4, "big"))
+        f.append(terrains)
+        f.append(features)
+        f.append(wonders)
+        f.append(resources)
+        f.append(mod_data)
+        f.append(title)
+        f.append(description)
 
         world_size = self.world_size + b'\x00'
-        f += len(world_size).to_bytes(4, "little")
-        f += world_size
+        f.append(len(world_size).to_bytes(4, "little"))
+        f.append(world_size)
 
         cells = b''
         for y in range(self.map_height):
@@ -249,17 +266,17 @@ class DecodeMap:
                 terrain, resource, feature, start_position, river, elevation, continent, wonder, resource_c = self.cells[(x, y)]
                 bitmap = start_position << 6 | river
                 cells += struct.pack("8B", terrain, resource, feature, bitmap, elevation, continent, wonder, resource_c)
-        f += cells
+        f.append(cells)
 
-        f += self.game_speed + (b'\x00' * (64 - len(self.game_speed)))
-        f += b'\x00' * 4
-        f += self.max_turns.to_bytes(4, "little")
-        f += b'\x00' * 4
-        f += struct.pack("l", self.start_year)
-        f += self.num_player_civs.to_bytes(1, "little")
-        f += self.num_minor_civs.to_bytes(1, "little")
-        f += self.num_teams.to_bytes(1, "little")
-        f += b'\x00'
+        f.append(self.game_speed + (b'\x00' * (64 - len(self.game_speed))))
+        f.append(b'\x00' * 4)
+        f.append(self.max_turns.to_bytes(4, "little"))
+        f.append(b'\x00' * 4)
+        f.append(struct.pack("l", self.start_year))
+        f.append(self.num_player_civs.to_bytes(1, "little"))
+        f.append(self.num_minor_civs.to_bytes(1, "little"))
+        f.append(self.num_teams.to_bytes(1, "little"))
+        f.append(b'\x00')
 
         improvements = b''.join([b + b'\x00' for b in self.improvements])
         unit_types = b''.join([b + b'\x00' for b in self.unit_types])
@@ -289,27 +306,54 @@ class DecodeMap:
         game_options = b''
         for data, option in self.game_options:
             game_options += data.to_bytes(1, "little") + option
-        f += len(improvements).to_bytes(4, "little")
-        f += len(unit_types).to_bytes(4, "little")
-        f += len(techs).to_bytes(4, "little")
-        f += len(policies).to_bytes(4, "little")
-        f += len(buildings).to_bytes(4, "little")
-        f += len(promotions).to_bytes(4, "little")
-        f += len(units).to_bytes(4, "little")
-        f += len(unit_names).to_bytes(4, "little")
-        f += len(cities).to_bytes(4, "little")
-        f += len(victory_data).to_bytes(4, "little")
-        f += len(game_options).to_bytes(4, "little")
-        f += improvements
-        f += unit_types
-        f += techs
-        f += policies
-        f += buildings
-        f += promotions
-        f += units
-        f += unit_names
-        f += cities
-        f += victory_data
-        f += game_options
+        f.append(len(improvements).to_bytes(4, "little"))
+        f.append(len(unit_types).to_bytes(4, "little"))
+        f.append(len(techs).to_bytes(4, "little"))
+        f.append(len(policies).to_bytes(4, "little"))
+        f.append(len(buildings).to_bytes(4, "little"))
+        f.append(len(promotions).to_bytes(4, "little"))
+        f.append(len(units).to_bytes(4, "little"))
+        f.append(len(unit_names).to_bytes(4, "little"))
+        f.append(len(cities).to_bytes(4, "little"))
+        f.append(len(victory_data).to_bytes(4, "little"))
+        f.append(len(game_options).to_bytes(4, "little"))
+        f.append(improvements)
+        f.append(unit_types)
+        f.append(techs)
+        f.append(policies)
+        f.append(buildings)
+        f.append(promotions)
+        f.append(units)
+        f.append(unit_names)
+        f.append(cities)
+        f.append(victory_data)
+        f.append(game_options)
 
-        return f + self.rest
+        f.append(self.rest)
+
+        names = (
+            "F_HEAD", "F_MAPWIDTH", "F_MAPHEIGHT", "F_PLAYERS_C", "F_SETTINGS", "F_TERRAINS_L", "F_FEATURES_L", 
+            "F_WONDERS_L", "F_RESOURCES_L", "F_MODDATA_L", "F_TITLE_L", "F_DESCRIPTION_L", "F_TERRAINS", "F_FEATURES", 
+            "F_WONDERS", "F_RESOURCES", "F_MODDATA", "F_TITLE", "F_DESCRIPTION", "F_WORLDSIZE_L", "F_WORLDSIZE", "F_CELLS", 
+            "F_GAMESPEED", "F_X1", "F_MAXTURNS", "F_X2", "F_STARTYEAR", "F_PLAYERCIVS_C", "F_MINORCIVS_C", "F_TEAMS_C", 
+            "F_X3", "F_IMPROVEMENTS_L", "F_UNITTYPES_L", "F_TECHS_L", "F_POLICIES_L", "F_BUILDINGS_L", "F_PROMOTIONS_L", 
+            "F_UNITDATA_L", "F_UNITNAMES_L", "F_CITYDATA_L", "F_VICTORYDATA_L", "F_GAMEOPTIONS_L", "F_IMPROVEMENTS", 
+            "F_UNITTYPES", "F_TECHS", "F_POLICIES", "F_BUILDINGS", "F_PROMOTIONS", "F_UNITDATA", "F_UNITNAMES", 
+            "F_CITYDATA", "F_VICTORYDATA", "F_GAMEOPTIONS", "F_REST"
+        )
+
+        if debug:
+            for new, old, name in zip(f, self.file, names):
+                bad = False
+                if new != old:
+                    bad = True
+                    print("Difference in", name)
+                    for i, (newc, oldc) in enumerate(zip(new, old)):
+                        if newc != oldc:
+                            break
+                    print("Old:", old[max(0,i-50):i], old[i:i+50])
+                    print("New:", new[max(0,i-50):i], new[i:i+50])
+                if bad:
+                    quit()
+
+        return b''.join(f)

@@ -5,7 +5,7 @@ specific_map = "drake-passage"
 print_map_info = True
 print_scenario_info = True
 print_map = False
-output = False
+output = True
 
 import os, random, decodemap
 path = "C://Users//isakh//Documents//My Games//Sid Meier's Civilization 5//Maps//"
@@ -67,10 +67,11 @@ for file in os.listdir(path):
                     continue
                 new_cells[coords] = (5, *other)
             return new_cells
-        cells = place_coast(m.cells, [5, 6], 0)
-        #cells = place_coast([6], 0)
-        # cells = place_coast([6], 0.5)
-        # cells = place_coast([6], 0.75)
+        cells = m.cells
+        # cells = place_coast(cells, [5, 6], 0)
+        # cells = place_coast(cells, [6], 0)
+        # cells = place_coast(cells, [6], 0.5)
+        # cells = place_coast(cells, [6], 0.75)
 
         cityable = set()
         for coords, cell in cells.items():
@@ -131,6 +132,6 @@ for file in os.listdir(path):
         if not output:
             continue
 
-        with open(path + file + "bruh.Civ5Map", "wb") as f:
-            mf = m.encode()
-            f.write(mf)
+        mf = m.encode()
+        # with open(path + file, "wb") as f:
+        #     f.write(mf)

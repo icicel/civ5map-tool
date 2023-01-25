@@ -309,16 +309,16 @@ class DecodeMap:
         policies = b''.join([b + b'\x00' for b in self.policies])
         buildings = b''.join([b + b'\x00' for b in self.buildings])
         promotions = b''.join([b + b'\x00' for b in self.promotions])
-        units = b'unit'
+        units = b'unit' if self.units else b''
         for name_index, xp, health, unit_type, owner, facing, status, promotion in self.units:
             if self.version == 12:
                 units += struct.pack("2shLLLBBBc64s", b'\xff\xff', name_index, xp, health, unit_type, owner, facing, status, b'\x00', promotion)
             elif self.version == 11:
                 units += struct.pack("2shLLBBBB32s", b'\xff\xff', name_index, xp, health, unit_type, owner, facing, status, promotion)
-        unit_names = b'name'
+        unit_names = b'name' if self.unit_names else b''
         for unit_name in self.unit_names:
             unit_names += pad_to_length(unit_name, 64)
-        cities = b'city'
+        cities = b'city' if self.cities else b''
         for city_name, owner, city_settings, population, health, building_data in self.cities:
             city_name = pad_to_length(city_name, 64)
             if self.version == 12:

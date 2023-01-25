@@ -77,17 +77,6 @@ class DecodeMap:
         world_size = strip_at_first_null(F_WORLDSIZE)
 
         F_CELLS = f.read(map_height * map_width * 8)
-        cells = {}
-        c = 0
-        for y in range(map_height):
-            for x in range(map_width):
-                cell = F_CELLS[c:c+8]
-                c += 8
-                terrain, resource, feature, bitmap, elevation, continent, wonder, resource_c = struct.unpack("8B", cell)
-                river = bitmap & 0b00000111
-                X1 = (bitmap & 0b00111000) >> 3
-                start_position = (bitmap & 0b11000000) >> 6
-                cells[(x, y)] = (terrain, resource, feature, start_position, river, elevation, continent, wonder, resource_c, X1)
 
 
 
@@ -156,19 +145,23 @@ class DecodeMap:
         units = []
         for unit in get_structs_of_size(F_UNITDATA[4:], 48 if version == 11 else 84):
             if version == 12:
-                _, name_index, xp, health, unit_type, owner, facing, status, _, promotion = struct.unpack("2shLLLBBBc64s", unit)
+                _, name_index, xp, health, unit_type, owner, facing, status, _, promotion_data \
+                 = struct.unpack("2shLLLBBBc64s", unit)
             elif version == 11:
-                _, name_index, xp, health, unit_type, owner, facing, status, promotion = struct.unpack("2shLLBBBB32s", unit)
-            units.append((name_index, xp, health, unit_type, owner, facing, status, promotion))
+                _, name_index, xp, health, unit_type, owner, facing, status, promotion_data \
+                 = struct.unpack("2shLLBBBB32s", unit)
+            units.append((name_index, xp, health, unit_type, owner, facing, status, promotion_data))
         unit_names = []
         for unit_name in get_structs_of_size(F_UNITNAMES[4:], 64):
             unit_names.append(strip_at_first_null(unit_name))
         cities = []
         for city in get_structs_of_size(F_CITYDATA[4:], 104 if version == 11 else 136):
             if version == 12:
-                city_name, owner, city_settings, population, health, building_data = struct.unpack("64sBBHL64s", city)
+                city_name, owner, city_settings, population, health, building_data \
+                 = struct.unpack("64sBBHL64s", city)
             elif version == 11:
-                city_name, owner, city_settings, population, health, building_data = struct.unpack("64sBBHL32s", city)
+                city_name, owner, city_settings, population, health, building_data \
+                 = struct.unpack("64sBBHL32s", city)
             city_name = strip_at_first_null(city_name)
             cities.append((city_name, owner, city_settings, population, health, building_data))
         victory_data = []
@@ -180,6 +173,60 @@ class DecodeMap:
 
 
 
+        ### Read the rest
+
+        # The size of F_PADDING varies in an unknown manner
+        teams_l = 64*num_teams
+        players_l = 436*num_player_civs+436*num_minor_civs
+        cell_improvements_l = 8*map_width*map_height
+        rest = f.read()
+        padding_l = len(rest)-teams_l-players_l-cell_improvements_l
+
+        F_PADDING = rest[:padding_l]
+        F_TEAMS = rest[padding_l:padding_l+teams_l]
+        F_PLAYERS = rest[padding_l+teams_l:padding_l+teams_l+players_l]
+        F_CELLIMPROVEMENTS = rest[padding_l+teams_l+players_l:]
+        teams = []
+        for team in get_structs_of_size(F_TEAMS, 64):
+            teams.append(strip_at_first_null(team))
+        players = []
+        for player in get_structs_of_size(F_PLAYERS, 436):
+            policy_data, leader_override, name_override, name, color, era, handicap, culture, gold, start_x, start_y, team, is_playable, _ \
+             = struct.unpack("32s64s64s64s64s64s64sLLllBB2s", player)
+            leader_override = strip_at_first_null(leader_override)
+            name_override = strip_at_first_null(name_override)
+            name = strip_at_first_null(name)
+            color = strip_at_first_null(color)
+            era = strip_at_first_null(era)
+            handicap = strip_at_first_null(handicap)
+            start_position = (start_x, start_y)
+            players.append((
+                policy_data, leader_override, name_override, name, color, era, handicap, 
+                culture, gold, start_position, team, is_playable
+            ))
+
+
+    
+        ### Read cells
+
+        cells = {}
+        c = 0
+        for y in range(map_height):
+            for x in range(map_width):
+                cell = F_CELLS[c:c+8]
+                cell_improvements = F_CELLIMPROVEMENTS[c:c+8]
+                c += 8
+                terrain, resource, feature, bitmap, elevation, continent, wonder, resource_c = \
+                 struct.unpack("BbbBBBBb", cell)
+                city, unit, owner, improvement, route, route_owner = \
+                 struct.unpack("hhbbbb", cell_improvements)
+                river = bitmap & 0b00000111
+                X1 = (bitmap & 0b00111000) >> 3
+                start_position = (bitmap & 0b11000000) >> 6
+                cells[(x, y)] = (
+                    terrain, resource, feature, start_position, river, elevation, continent, wonder, resource_c, X1,
+                    city, unit, owner, improvement, route, route_owner
+                )
 
 
 
@@ -219,10 +266,11 @@ class DecodeMap:
         self.cities = cities
         self.victory_data = victory_data
         self.game_options = game_options
+        self.padding_length = padding_l
+        self.teams = teams
+        self.players = players
         
   
-        F_REST = f.read()
-        self.rest = F_REST
         self.file = (
             F_HEAD, F_MAPWIDTH, F_MAPHEIGHT, F_PLAYERS_C, F_SETTINGS, F_TERRAINS_L, F_FEATURES_L, F_WONDERS_L, 
             F_RESOURCES_L, F_MODDATA_L, F_TITLE_L, F_DESCRIPTION_L, F_TERRAINS, F_FEATURES, F_WONDERS, F_RESOURCES, 
@@ -230,10 +278,12 @@ class DecodeMap:
             F_STARTYEAR, F_PLAYERCIVS_C, F_MINORCIVS_C, F_TEAMS_C, F_X3, F_IMPROVEMENTS_L, F_UNITTYPES_L, F_TECHS_L, 
             F_POLICIES_L, F_BUILDINGS_L, F_PROMOTIONS_L, F_UNITDATA_L, F_UNITNAMES_L, F_CITYDATA_L, 
             F_VICTORYDATA_L, F_GAMEOPTIONS_L, F_IMPROVEMENTS, F_UNITTYPES, F_TECHS, F_POLICIES, F_BUILDINGS, 
-            F_PROMOTIONS, F_UNITDATA, F_UNITNAMES, F_CITYDATA, F_VICTORYDATA, F_GAMEOPTIONS, 
-            
-            F_REST
+            F_PROMOTIONS, F_UNITDATA, F_UNITNAMES, F_CITYDATA, F_VICTORYDATA, F_GAMEOPTIONS, F_PADDING, F_TEAMS,
+            F_PLAYERS, F_CELLIMPROVEMENTS
         )
+
+
+
 
 
     def encode(self):
@@ -280,9 +330,11 @@ class DecodeMap:
         cells = b''
         for y in range(self.map_height):
             for x in range(self.map_width):
-                terrain, resource, feature, start_position, river, elevation, continent, wonder, resource_c, X1 = self.cells[(x, y)]
+                terrain, resource, feature, start_position, river, elevation, continent, wonder, resource_c, X1, *_ = self.cells[(x, y)]
                 bitmap = start_position << 6 | X1 << 3 | river
-                cells += struct.pack("8B", terrain, resource, feature, bitmap, elevation, continent, wonder, resource_c)
+                print(X1)
+                cells += struct.pack("BbbBBBBb", 
+                 terrain, resource, feature, bitmap, elevation, continent, wonder, resource_c)
         f.append(cells)
 
 
@@ -310,11 +362,13 @@ class DecodeMap:
         buildings = b''.join([b + b'\x00' for b in self.buildings])
         promotions = b''.join([b + b'\x00' for b in self.promotions])
         units = b'unit' if self.units else b''
-        for name_index, xp, health, unit_type, owner, facing, status, promotion in self.units:
+        for name_index, xp, health, unit_type, owner, facing, status, promotion_data in self.units:
             if self.version == 12:
-                units += struct.pack("2shLLLBBBc64s", b'\xff\xff', name_index, xp, health, unit_type, owner, facing, status, b'\x00', promotion)
+                units += struct.pack("2shLLLBBBc64s", 
+                 b'\xff\xff', name_index, xp, health, unit_type, owner, facing, status, b'\x00', promotion_data)
             elif self.version == 11:
-                units += struct.pack("2shLLBBBB32s", b'\xff\xff', name_index, xp, health, unit_type, owner, facing, status, promotion)
+                units += struct.pack("2shLLBBBB32s", 
+                 b'\xff\xff', name_index, xp, health, unit_type, owner, facing, status, promotion_data)
         unit_names = b'name' if self.unit_names else b''
         for unit_name in self.unit_names:
             unit_names += pad_to_length(unit_name, 64)
@@ -322,9 +376,11 @@ class DecodeMap:
         for city_name, owner, city_settings, population, health, building_data in self.cities:
             city_name = pad_to_length(city_name, 64)
             if self.version == 12:
-                cities += struct.pack("64sBBHL64s", city_name, owner, city_settings, population, health, building_data)
+                cities += struct.pack("64sBBHL64s", 
+                 city_name, owner, city_settings, population, health, building_data)
             elif self.version == 11:
-                cities += struct.pack("64sBBHL32s", city_name, owner, city_settings, population, health, building_data)
+                cities += struct.pack("64sBBHL32s", 
+                 city_name, owner, city_settings, population, health, building_data)
         victory_data = b''
         for data, victory_type in self.victory_data:
             victory_data += data.to_bytes(1, "little") + victory_type + b'\x00'
@@ -354,7 +410,33 @@ class DecodeMap:
         f.append(victory_data)
         f.append(game_options)
 
-        f.append(self.rest)
+        
+        
+        ### Encode the rest
+
+        players = b''
+        for policy_data, leader_override, name_override, name, color, era, handicap, culture, gold, start_position, team, is_playable in self.players:
+            leader_override = pad_to_length(leader_override, 64)
+            name_override = pad_to_length(name_override, 64)
+            name = pad_to_length(name, 64)
+            color = pad_to_length(color, 64)
+            era = pad_to_length(era, 64)
+            handicap = pad_to_length(handicap, 64)
+            start_x, start_y = start_position
+            players += struct.pack("32s64s64s64s64s64s64sLLllBB2s", 
+             policy_data, leader_override, name_override, name, color, era, handicap, culture, gold, start_x, start_y, team, is_playable, b'\x00\x00')
+        cell_improvements = b''
+        for y in range(self.map_height):
+            for x in range(self.map_width):
+                _, _, _, _, _, _, _, _, _, _, city, unit, owner, improvement, route, route_owner = self.cells[(x, y)]
+                cell_improvements += struct.pack("hhbbbb", 
+                 city, unit, owner, improvement, route, route_owner)
+        f.append(b'\x00' * self.padding_length)
+        f.append(b''.join([pad_to_length(team, 64) for team in self.teams]))
+        f.append(players)
+        f.append(cell_improvements)
+
+
 
         names = (
             "F_HEAD", "F_MAPWIDTH", "F_MAPHEIGHT", "F_PLAYERS_C", "F_SETTINGS", "F_TERRAINS_L", "F_FEATURES_L", 
@@ -364,7 +446,7 @@ class DecodeMap:
             "F_X3", "F_IMPROVEMENTS_L", "F_UNITTYPES_L", "F_TECHS_L", "F_POLICIES_L", "F_BUILDINGS_L", "F_PROMOTIONS_L", 
             "F_UNITDATA_L", "F_UNITNAMES_L", "F_CITYDATA_L", "F_VICTORYDATA_L", "F_GAMEOPTIONS_L", "F_IMPROVEMENTS", 
             "F_UNITTYPES", "F_TECHS", "F_POLICIES", "F_BUILDINGS", "F_PROMOTIONS", "F_UNITDATA", "F_UNITNAMES", 
-            "F_CITYDATA", "F_VICTORYDATA", "F_GAMEOPTIONS", "F_REST"
+            "F_CITYDATA", "F_VICTORYDATA", "F_GAMEOPTIONS", "F_PADDING", "F_TEAMS", "F_PLAYERS", "F_CELLIMPROVEMENTS"
         )
 
         if debug:

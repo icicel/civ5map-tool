@@ -5,7 +5,7 @@ specific_map = "drake-passage"
 print_map_info = True
 print_scenario_info = True
 print_map = False
-output = True
+export_map = False
 
 import os, random, decodemap
 path = "C://Users//isakh//Documents//My Games//Sid Meier's Civilization 5//Maps//"
@@ -33,8 +33,8 @@ for file in os.listdir(path):
                 f"{m.game_speed=}\n{m.max_turns=}\n{m.start_year=}\n"
                 f"{m.num_player_civs=}\n{m.num_minor_civs=}\n{m.num_teams=}\n"
                 f"{m.improvements=}\n{m.unit_types=}\n{m.techs=}\n{m.policies=}\n{m.buildings=}\n{m.promotions=}\n"
-                f"{m.units=}\n{m.unit_names=}\n{m.cities=}\n"
-                f"{m.victory_data=}\n{m.game_options=}\n"
+                f"{m.units=}\n{m.unit_names=}\n{m.cities=}\n{m.victory_data=}\n{m.game_options=}\n"
+                f"{m.teams=}\n{m.players=}\n{m.padding_length=}"
             )
 
             
@@ -129,7 +129,7 @@ for file in os.listdir(path):
 
         print(f"{len(cityable) + len(neighbors_of_cityable)}\t{file}")
 
-        if not output:
+        if not export_map:
             continue
 
         mf = m.encode()

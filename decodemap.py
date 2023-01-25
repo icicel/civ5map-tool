@@ -32,7 +32,6 @@ class DecodeMap:
         map_width = int.from_bytes(F_MAPWIDTH, "little")
         map_height = int.from_bytes(F_MAPHEIGHT, "little")
         num_players = int.from_bytes(F_PLAYERS_C, "little")
-        misc_settings = (F_SETTINGS[0] & 0b11110000) >> 4
         world_wrap = (F_SETTINGS[0] & 0b00000100) >> 2
         random_resources = (F_SETTINGS[0] & 0b00000010) >> 1
         random_goodies = F_SETTINGS[0] & 0b00000001
@@ -146,20 +145,16 @@ class DecodeMap:
         policies = F_POLICIES.split(b'\x00')[:-1]
         buildings = F_BUILDINGS.split(b'\x00')[:-1]
         promotions = F_PROMOTIONS.split(b'\x00')[:-1]
-        unit_data_header = F_UNITDATA[:4]
         units = []
         for unit in get_structs_of_size(F_UNITDATA[4:], 48 if version == 11 else 84):
             if version == 12:
-                X1, name_index, xp, health, unit_type, owner, facing, status, X2, promotion = struct.unpack("2shLLLBBBc64s", unit)
+                _, name_index, xp, health, unit_type, owner, facing, status, _, promotion = struct.unpack("2shLLLBBBc64s", unit)
             elif version == 11:
-                X1, name_index, xp, health, unit_type, owner, facing, status, promotion = struct.unpack("2shLLBBBB32s", unit)
-                X2 = None
-            units.append((name_index, xp, health, unit_type, owner, facing, status, promotion, X1, X2))
-        unit_names_header = F_UNITNAMES[:4]
+                _, name_index, xp, health, unit_type, owner, facing, status, promotion = struct.unpack("2shLLBBBB32s", unit)
+            units.append((name_index, xp, health, unit_type, owner, facing, status, promotion))
         unit_names = []
         for unit_name in get_structs_of_size(F_UNITNAMES[4:], 64):
             unit_names.append(strip_at_first_null(unit_name))
-        city_data_header = F_CITYDATA[:4]
         cities = []
         for city in get_structs_of_size(F_CITYDATA[4:], 104 if version == 11 else 136):
             if version == 12:
@@ -175,8 +170,6 @@ class DecodeMap:
         for option in F_GAMEOPTIONS.split(b'\x00')[:-1]:
             game_options.append((option[0], option[1:]))
 
-        F_REST = f.read()
-        rest = F_REST
 
 
 
@@ -187,7 +180,6 @@ class DecodeMap:
         self.map_width = map_width
         self.map_height = map_height
         self.num_players = num_players
-        self.misc_settings = misc_settings
         self.world_wrap = world_wrap
         self.random_resources = random_resources
         self.random_goodies = random_goodies
@@ -212,17 +204,15 @@ class DecodeMap:
         self.policies = policies
         self.buildings = buildings
         self.promotions = promotions
-        self.unit_data_header = unit_data_header
         self.units = units
-        self.unit_names_header = unit_names_header
         self.unit_names = unit_names
-        self.city_data_header = city_data_header
         self.cities = cities
         self.victory_data = victory_data
         self.game_options = game_options
         
-        
-        self.rest = rest
+  
+        F_REST = f.read()
+        self.rest = F_REST
         self.file = (
             F_HEAD, F_MAPWIDTH, F_MAPHEIGHT, F_PLAYERS_C, F_SETTINGS, F_TERRAINS_L, F_FEATURES_L, F_WONDERS_L, 
             F_RESOURCES_L, F_MODDATA_L, F_TITLE_L, F_DESCRIPTION_L, F_TERRAINS, F_FEATURES, F_WONDERS, F_RESOURCES, 
@@ -230,7 +220,9 @@ class DecodeMap:
             F_STARTYEAR, F_PLAYERCIVS_C, F_MINORCIVS_C, F_TEAMS_C, F_X3, F_IMPROVEMENTS_L, F_UNITTYPES_L, F_TECHS_L, 
             F_POLICIES_L, F_BUILDINGS_L, F_PROMOTIONS_L, F_UNITDATA_L, F_UNITNAMES_L, F_CITYDATA_L, 
             F_VICTORYDATA_L, F_GAMEOPTIONS_L, F_IMPROVEMENTS, F_UNITTYPES, F_TECHS, F_POLICIES, F_BUILDINGS, 
-            F_PROMOTIONS, F_UNITDATA, F_UNITNAMES, F_CITYDATA, F_VICTORYDATA, F_GAMEOPTIONS, F_REST
+            F_PROMOTIONS, F_UNITDATA, F_UNITNAMES, F_CITYDATA, F_VICTORYDATA, F_GAMEOPTIONS, 
+            
+            F_REST
         )
 
 
@@ -242,7 +234,7 @@ class DecodeMap:
         f.append(self.map_width.to_bytes(4, "little"))
         f.append(self.map_height.to_bytes(4, "little"))
         f.append(self.num_players.to_bytes(1, "little"))
-        f.append((self.misc_settings << 4 | self.world_wrap << 2 | self.random_resources << 1 | self.random_goodies).to_bytes(4, "little"))
+        f.append((self.world_wrap << 2 | self.random_resources << 1 | self.random_goodies).to_bytes(4, "little"))
 
         terrains = b''.join([b + b'\x00' for b in self.terrains])
         features = b''.join([b + b'\x00' for b in self.features])
@@ -293,16 +285,16 @@ class DecodeMap:
         policies = b''.join([b + b'\x00' for b in self.policies])
         buildings = b''.join([b + b'\x00' for b in self.buildings])
         promotions = b''.join([b + b'\x00' for b in self.promotions])
-        units = self.unit_data_header
-        for name_index, xp, health, unit_type, owner, facing, status, promotion, X1, X2 in self.units:
+        units = b'unit'
+        for name_index, xp, health, unit_type, owner, facing, status, promotion in self.units:
             if self.version == 12:
-                units += struct.pack("2shLLLBBBc64s", X1, name_index, xp, health, unit_type, owner, facing, status, X2, promotion)
+                units += struct.pack("2shLLLBBBc64s", b'\xff\xff', name_index, xp, health, unit_type, owner, facing, status, b'\x00', promotion)
             elif self.version == 11:
-                units += struct.pack("2shLLBBBB32s", X1, name_index, xp, health, unit_type, owner, facing, status, promotion)
-        unit_names = self.unit_names_header
+                units += struct.pack("2shLLBBBB32s", b'\xff\xff', name_index, xp, health, unit_type, owner, facing, status, promotion)
+        unit_names = b'name'
         for unit_name in self.unit_names:
             unit_names += pad_to_length(unit_name, 64)
-        cities = self.city_data_header
+        cities = b'city'
         for city_name, owner, city_settings, population, health, building_data in self.cities:
             city_name = pad_to_length(city_name, 64)
             if self.version == 12:

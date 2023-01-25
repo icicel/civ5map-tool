@@ -36,6 +36,10 @@ class DecodeMap:
         random_resources = (F_SETTINGS[0] & 0b00000010) >> 1
         random_goodies = F_SETTINGS[0] & 0b00000001
 
+
+
+        ### Read map arrays
+
         F_TERRAINS_L = f.read(4)
         F_FEATURES_L = f.read(4)
         F_WONDERS_L = f.read(4)
@@ -105,6 +109,10 @@ class DecodeMap:
         num_minor_civs = int.from_bytes(F_MINORCIVS_C, "little")
         num_teams = int.from_bytes(F_TEAMS_C, "little")
 
+
+
+        ### Read scenario arrays
+
         F_IMPROVEMENTS_L = f.read(4)
         F_UNITTYPES_L = f.read(4)
         F_TECHS_L = f.read(4)
@@ -173,7 +181,9 @@ class DecodeMap:
 
 
 
-        ### Holy shit
+
+
+        ### Some variables...
 
         self.is_scenario = is_scenario
         self.version = version
@@ -230,11 +240,17 @@ class DecodeMap:
 
         f = []
 
+        ### Encode map data
+
         f.append((self.is_scenario << 7 | self.version).to_bytes(1, "little"))
         f.append(self.map_width.to_bytes(4, "little"))
         f.append(self.map_height.to_bytes(4, "little"))
         f.append(self.num_players.to_bytes(1, "little"))
         f.append((self.world_wrap << 2 | self.random_resources << 1 | self.random_goodies).to_bytes(4, "little"))
+
+
+
+        ### Encode map arrays
 
         terrains = b''.join([b + b'\x00' for b in self.terrains])
         features = b''.join([b + b'\x00' for b in self.features])
@@ -269,6 +285,10 @@ class DecodeMap:
                 cells += struct.pack("8B", terrain, resource, feature, bitmap, elevation, continent, wonder, resource_c)
         f.append(cells)
 
+
+
+        ### Encode scenario data
+
         f.append(pad_to_length(self.game_speed, 64))
         f.append(b'\x00' * 4)
         f.append(self.max_turns.to_bytes(4, "little"))
@@ -278,6 +298,10 @@ class DecodeMap:
         f.append(self.num_minor_civs.to_bytes(1, "little"))
         f.append(self.num_teams.to_bytes(1, "little"))
         f.append(b'\x00')
+
+
+
+        ### Encode scenario arrays
 
         improvements = b''.join([b + b'\x00' for b in self.improvements])
         unit_types = b''.join([b + b'\x00' for b in self.unit_types])

@@ -116,7 +116,7 @@ for file in os.listdir(path):
             elevation_map = ""
             for y in range(m.map_height):
                 for x in range(m.map_width):
-                    terrain, _, feature, _, _, elevation, _, wonder, _ = cells[(x, y)]
+                    terrain, _, feature, _, _, elevation, _, wonder, *_ = cells[(x, y)]
                     terrain_map += terrain_graphical[terrain]
                     feature_map += feature_graphical[feature]
                     elevation_map += elevation_graphical[elevation] if wonder == -1 else wonder_graphical
@@ -127,11 +127,11 @@ for file in os.listdir(path):
             print(feature_map + "-" * m.map_width)
             print(elevation_map + "-" * m.map_width)
 
-        #print(f"{m.len(cityable) + len(neighbors_of_cityable)}\t{m.file}")
+        print(f"{len(cityable) + len(neighbors_of_cityable)}\t{file}")
 
         if not output:
             continue
 
         mf = m.encode()
-        # with open(path + file, "wb") as f:
-        #     f.write(mf)
+        with open(path + file + ".Civ5Map", "wb") as f:
+            f.write(mf)

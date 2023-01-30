@@ -65,37 +65,39 @@ for file in os.listdir(path):
         # cells = place_coast(cells, [6], 0.5)
         # cells = place_coast(cells, [6], 0.75)
 
-        cityable = set()
-        for coords, cell in cells.items():
-            terrain, _, feature, _, _, elevation, *_ = cell
-            if terrain in [2, 4] and elevation == 0: # desert, snow, flat
-                continue
-            if terrain in [5, 6]: # coast, ocean
-                continue
-            if feature in [0, 6]: # ice, fallout
-                continue
-            if elevation == 2: # mountain
-                continue
-            cityable.add(coords)
-        neighbors_of_cityable = set()
-        for coords, cell in cells.items():
-            if coords in cityable:
-                continue
-            terrain, _, feature, _, _, elevation, *_ = cell
-            if terrain in [5, 6]: # coast, ocean
-                continue
-            if feature in [0, 6]: # ice, fallout
-                continue
-            if elevation == 2: # mountain
-                continue
-            for neighbor in get_neighbors(coords):
-                if (neighbor in cityable or 
-                (cells[neighbor][0] == 5 and cells[neighbor][2] not in [0, 6]) or 
-                cells[neighbor][6] != -1): # cityable, coast, wonder
-                    break
-            else:
-                continue
-            neighbors_of_cityable.add(coords)
+        if settings.count_cityable:
+            cityable = set()
+            for coords, cell in cells.items():
+                terrain, _, feature, _, _, elevation, *_ = cell
+                if terrain in [2, 4] and elevation == 0: # desert, snow, flat
+                    continue
+                if terrain in [5, 6]: # coast, ocean
+                    continue
+                if feature in [0, 6]: # ice, fallout
+                    continue
+                if elevation == 2: # mountain
+                    continue
+                cityable.add(coords)
+            neighbors_of_cityable = set()
+            for coords, cell in cells.items():
+                if coords in cityable:
+                    continue
+                terrain, _, feature, _, _, elevation, *_ = cell
+                if terrain in [5, 6]: # coast, ocean
+                    continue
+                if feature in [0, 6]: # ice, fallout
+                    continue
+                if elevation == 2: # mountain
+                    continue
+                for neighbor in get_neighbors(coords):
+                    if (neighbor in cityable or 
+                    (cells[neighbor][0] == 5 and cells[neighbor][2] not in [0, 6]) or 
+                    cells[neighbor][6] != -1): # cityable, coast, wonder
+                        break
+                else:
+                    continue
+                neighbors_of_cityable.add(coords)
+            print(f"{len(cityable) + len(neighbors_of_cityable)}\t{file}")
 
         if settings.print_map:
             # grassland, plains, desert, tundra, snow, coast, ocean
@@ -149,8 +151,6 @@ for file in os.listdir(path):
             print(feature_map + "-" * m.map_width)
             print(scenario_map + "-" * m.map_width)
             print(cityable_map + "-" * m.map_width)
-
-        print(f"{len(cityable) + len(neighbors_of_cityable)}\t{file}")
 
         if not settings.export_map:
             continue

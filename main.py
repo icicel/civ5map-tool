@@ -1,26 +1,18 @@
 
-all_maps = False
-specific_map = "drake-passage"
-
-print_map_info = True
-print_scenario_info = True
-print_map = False
-export_map = False
-
-import os, random, decodemap
+import os, random, decodemap, settings
 path = "C://Users//isakh//Documents//My Games//Sid Meier's Civilization 5//Maps//"
 c = 0
 
 for file in os.listdir(path):
     if file[-8:] != ".Civ5Map":
         continue
-    if not all_maps and file[:-8] != specific_map:
+    if not settings.all_maps and file[:-8] != settings.specific_map:
         continue
     with open(path + file, "rb") as f:
 
         m = decodemap.DecodeMap(f)
         
-        if print_map_info:
+        if settings.print_map_info:
             print(
                 f"{m.is_scenario=}\n{m.version=}\n{m.map_width=}\n{m.map_height=}\n{m.num_players=}\n"
                 f"{m.world_wrap=}\n{m.random_resources=}\n{m.random_goodies=}\n"
@@ -28,7 +20,7 @@ for file in os.listdir(path):
                 f"{m.mod_data=}\n{m.title=}\n{m.description=}\n{m.world_size=}\n"
                 f"first cell={m.cells[(0, 0)]}\nlast cell={m.cells[(m.map_width-1, m.map_height-1)]}"
             )
-        if print_scenario_info:
+        if settings.print_scenario_info:
             print(
                 f"{m.game_speed=}\n{m.max_turns=}\n{m.start_year=}\n"
                 f"{m.num_player_civs=}\n{m.num_minor_civs=}\n{m.num_teams=}\n"
@@ -105,7 +97,7 @@ for file in os.listdir(path):
                 continue
             neighbors_of_cityable.add(coords)
 
-        if print_map:
+        if settings.print_map:
             # grassland, plains, desert, tundra, snow, coast, ocean
             terrain_graphical = "#%:t,~."
             # ice, jungle, marsh, oasis, flood plains, forest, fallout, atoll, none
@@ -160,7 +152,7 @@ for file in os.listdir(path):
 
         print(f"{len(cityable) + len(neighbors_of_cityable)}\t{file}")
 
-        if not export_map:
+        if not settings.export_map:
             continue
 
         mf = m.encode()

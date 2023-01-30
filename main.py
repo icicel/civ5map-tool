@@ -30,6 +30,34 @@ for file in os.listdir(path):
             )
 
             
+
+        if settings.random_map_settings:
+            m.random_resources = 1
+            m.random_goodies = 1
+
+        new_cells = {}
+        for coords, cell in m.cells.items():
+            terrain, resource, feature, start_position, river, elevation, continent, wonder, resource_c, X1,\
+            city, unit, owner, improvement, route, route_owner = cell
+            if settings.clear_players:
+                city = -1
+                unit = -1
+                owner = -1
+            if settings.clear_improvements:
+                improvement = -1
+                route = -1
+                route_owner = -1
+            if settings.clear_resources:
+                resource = -1
+                resource_c = -1
+            if settings.clear_start_positions:
+                start_position = 0
+            if settings.clear_rivers:
+                river = 0
+            new_cells[coords] = (terrain, resource, feature, start_position, river, elevation, continent, 
+                                wonder, resource_c, X1, city, unit, owner, improvement, route, route_owner)
+        cells = new_cells
+
         def get_neighbors(coords):
             x, y = coords
             if y % 2: # odd
@@ -40,30 +68,32 @@ for file in os.listdir(path):
         def is_valid(coords):
             x, y = coords
             return x >= 0 and y >= 0 and x < m.map_width and y < m.map_height
-
-        def place_coast(cells, filter, chance_for_ocean):
-            new_cells = {}
-            for coords, cell in cells.items():
-                terrain, *other = cell
-                if terrain not in filter:
-                    new_cells[coords] = cell
-                    continue
-                for n in get_neighbors(coords):
-                    if cells[n][0] not in filter:
-                        break
-                else:
-                    new_cells[coords] = (6, *other)
-                    continue
-                if random.random() < chance_for_ocean:
-                    new_cells[coords] = (6, *other)
-                    continue
-                new_cells[coords] = (5, *other)
-            return new_cells
-        cells = m.cells
-        # cells = place_coast(cells, [5, 6], 0)
-        # cells = place_coast(cells, [6], 0)
-        # cells = place_coast(cells, [6], 0.5)
-        # cells = place_coast(cells, [6], 0.75)
+            
+        if settings.minimal_coasts:
+            def place_coast(cells, filter, chance_for_ocean):
+                new_cells = {}
+                for coords, cell in cells.items():
+                    terrain, *other = cell
+                    if terrain not in filter:
+                        new_cells[coords] = cell
+                        continue
+                    for n in get_neighbors(coords):
+                        if cells[n][0] not in filter:
+                            break
+                    else:
+                        new_cells[coords] = (6, *other)
+                        continue
+                    if random.random() < chance_for_ocean:
+                        new_cells[coords] = (6, *other)
+                        continue
+                    new_cells[coords] = (5, *other)
+                return new_cells
+            cells = place_coast(cells, [5, 6], 0)
+            if settings.double_minimal_coasts:
+                cells = place_coast(cells, [6], 0)
+            if settings.random_coasts:
+                cells = place_coast(cells, [6], 0.5)
+                cells = place_coast(cells, [6], 0.75)
 
         if settings.count_cityable:
             cityable = set()
@@ -154,7 +184,8 @@ for file in os.listdir(path):
 
         if not settings.export_map:
             continue
-
+        
+        m.cells = cells
         mf = m.encode()
-        with open(path + file + ".Civ5Map", "wb") as f:
+        with open(path + file, "wb") as f:
             f.write(mf)

@@ -332,7 +332,6 @@ class DecodeMap:
             for x in range(self.map_width):
                 terrain, resource, feature, start_position, river, elevation, continent, wonder, resource_c, X1, *_ = self.cells[(x, y)]
                 bitmap = start_position << 6 | X1 << 3 | river
-                print(X1)
                 cells += struct.pack("BbbBBBbb", 
                  terrain, resource, feature, bitmap, elevation, continent, wonder, resource_c)
         f.append(cells)

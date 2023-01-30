@@ -217,7 +217,7 @@ class DecodeMap:
                 cell_improvements = F_CELLIMPROVEMENTS[c:c+8]
                 c += 8
                 terrain, resource, feature, bitmap, elevation, continent, wonder, resource_c = \
-                 struct.unpack("BbbBBBBb", cell)
+                 struct.unpack("BbbBBBbB", cell)
                 city, unit, owner, improvement, route, route_owner = \
                  struct.unpack("hhbbbb", cell_improvements)
                 river = bitmap & 0b00000111
@@ -333,7 +333,7 @@ class DecodeMap:
                 terrain, resource, feature, start_position, river, elevation, continent, wonder, resource_c, X1, *_ = self.cells[(x, y)]
                 bitmap = start_position << 6 | X1 << 3 | river
                 print(X1)
-                cells += struct.pack("BbbBBBBb", 
+                cells += struct.pack("BbbBBBbB", 
                  terrain, resource, feature, bitmap, elevation, continent, wonder, resource_c)
         f.append(cells)
 

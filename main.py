@@ -97,7 +97,9 @@ for file in os.listdir(path):
             if elevation == 2: # mountain
                 continue
             for neighbor in get_neighbors(coords):
-                if neighbor in cityable or cells[neighbor][0] == 5 or cells[neighbor][6] != -1: # cityable, coast, wonder
+                if (neighbor in cityable or 
+                (cells[neighbor][0] == 5 and cells[neighbor][2] not in [0, 6]) or 
+                cells[neighbor][6] != -1): # cityable, coast, wonder
                     break
             else:
                 continue
@@ -105,27 +107,56 @@ for file in os.listdir(path):
 
         if print_map:
             # grassland, plains, desert, tundra, snow, coast, ocean
-            terrain_graphical = "#%:t,~ "
+            terrain_graphical = "#%:t,~."
             # ice, jungle, marsh, oasis, flood plains, forest, fallout, atoll, none
-            feature_graphical = "IW@¤&^Xö "
+            feature_graphical = "Iw@¤&vXö "
             # flat, hill, mountain
-            elevation_graphical = " .A"
-            wonder_graphical = "*"
-            terrain_map = ""
+            elevation_graphical = " .M"
+            elevation_bg = [None, None, "85;85;85"]
+            # wonder
+            wonder_graphical = "$"
+            wonder_bg = "255;0;255"
             feature_map = ""
-            elevation_map = ""
-            for y in range(m.map_height):
+            scenario_map = ""
+            cityable_map = ""
+            for y in range(m.map_height-1, -1, -1):
                 for x in range(m.map_width):
-                    terrain, _, feature, _, _, elevation, _, wonder, *_ = cells[(x, y)]
-                    terrain_map += terrain_graphical[terrain]
-                    feature_map += feature_graphical[feature]
-                    elevation_map += elevation_graphical[elevation] if wonder == -1 else wonder_graphical
-                terrain_map += "\n"
+                    terrain, resource, feature, start_position, river, elevation, continent, wonder, _, _,\
+                    city, unit, owner, improvement, route, route_owner = cells[(x, y)]
+                    if wonder != -1:
+                        feature_map += wonder_graphical
+                    elif elevation == 2:
+                        feature_map += elevation_graphical[elevation]
+                    elif feature != -1:
+                        feature_map += feature_graphical[feature]
+                    else:
+                        feature_map += terrain_graphical[terrain]
+                    if city != -1:
+                        scenario_map += "C"
+                    elif unit != -1:
+                        scenario_map += "U"
+                    elif improvement != -1:
+                        scenario_map += "$"
+                    elif route != -1:
+                        scenario_map += "/"
+                    elif resource != -1:
+                        scenario_map += "¤"
+                    elif start_position:
+                        scenario_map += "O"
+                    elif terrain in [5, 6]:
+                        scenario_map += "~"
+                    else:
+                        scenario_map += " "
+                    if (x, y) in cityable:
+                        cityable_map += "#"
+                    else:
+                        cityable_map += " "
                 feature_map += "\n"
-                elevation_map += "\n"
-            print(terrain_map + "-" * m.map_width)
+                scenario_map += "\n"
+                cityable_map += "\n"
             print(feature_map + "-" * m.map_width)
-            print(elevation_map + "-" * m.map_width)
+            print(scenario_map + "-" * m.map_width)
+            print(cityable_map + "-" * m.map_width)
 
         print(f"{len(cityable) + len(neighbors_of_cityable)}\t{file}")
 

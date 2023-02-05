@@ -11,6 +11,7 @@ for file in os.listdir(path):
     with open(path + file, "rb") as f:
 
         m = decodemap.DecodeMap(f)
+        was_changed = False
         
         if settings.print_map_info:
             print(
@@ -32,6 +33,8 @@ for file in os.listdir(path):
             
 
         if settings.random_map_settings:
+            if not m.random_resources or not m.random_goodies:
+                was_changed = True
             m.random_resources = 1
             m.random_goodies = 1
 
@@ -40,19 +43,29 @@ for file in os.listdir(path):
             terrain, resource, feature, start_position, river, elevation, continent, wonder, resource_c, X1,\
             city, unit, owner, improvement, route, route_owner = cell
             if settings.clear_players:
+                if city != -1 or unit != -1 or owner != -1:
+                    was_changed = True
                 city = -1
                 unit = -1
                 owner = -1
             if settings.clear_improvements:
+                if improvement != -1 or route != -1 or route_owner != -1:
+                    was_changed = True
                 improvement = -1
                 route = -1
                 route_owner = -1
             if settings.clear_resources:
+                if resource != -1 or resource_c:
+                    was_changed = True
                 resource = -1
-                resource_c = -1
+                resource_c = 0
             if settings.clear_start_positions:
+                if start_position:
+                    was_changed = True
                 start_position = 0
             if settings.clear_rivers:
+                if river:
+                    was_changed = True
                 river = 0
             new_cells[coords] = (terrain, resource, feature, start_position, river, elevation, continent, 
                                 wonder, resource_c, X1, city, unit, owner, improvement, route, route_owner)
@@ -128,6 +141,8 @@ for file in os.listdir(path):
                     continue
                 neighbors_of_cityable.add(coords)
             print(f"{len(cityable) + len(neighbors_of_cityable)}\t{file}")
+        else:
+            print(f"{was_changed}\t{file}")
 
         if settings.print_map:
             # grassland, plains, desert, tundra, snow, coast, ocean
@@ -182,7 +197,7 @@ for file in os.listdir(path):
             print(scenario_map + "-" * m.map_width)
             print(cityable_map + "-" * m.map_width)
 
-        if not settings.export_map:
+        if not settings.export_map or not was_changed:
             continue
         
         m.cells = cells

@@ -1,14 +1,13 @@
 
 import os, random, decodemap, settings
-path = "C://Users//isakh//Documents//My Games//Sid Meier's Civilization 5//Maps//"
 c = 0
 
-for file in os.listdir(path):
+for file in os.listdir(settings.import_path):
     if file[-8:] != ".Civ5Map":
         continue
     if not settings.all_maps and file[:-8] != settings.specific_map:
         continue
-    with open(path + file, "rb") as f:
+    with open(settings.import_path + file, "rb") as f:
 
         m = decodemap.DecodeMap(f)
         was_changed = False
@@ -202,5 +201,5 @@ for file in os.listdir(path):
         
         m.cells = cells
         mf = m.encode()
-        with open(path + file, "wb") as f:
+        with open(settings.export_path + file, "wb") as f:
             f.write(mf)

@@ -1,4 +1,6 @@
 
+import_path = "C://Users//isakh//Documents//My Games//Sid Meier's Civilization 5//Mapsbackup//"
+export_path = "C://Users//isakh//Documents//My Games//Sid Meier's Civilization 5//Maps//"
 all_maps = False
 specific_map = "drake-passage"
 

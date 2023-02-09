@@ -1,13 +1,13 @@
 
 import_path = "C://Users//isakh//Documents//My Games//Sid Meier's Civilization 5//Mapsbackup//"
 export_path = "C://Users//isakh//Documents//My Games//Sid Meier's Civilization 5//Maps//"
-all_maps = False
-specific_map = "drake-passage"
+all_maps = True
+specific_map = ""
 
-print_map_info = True
-print_scenario_info = True
-count_cityable = True # count "good"? tiles
-count_oceanic_coasts = True # count coast tiles that are not next to land
+print_map_info = False
+print_scenario_info = False
+count_cityable = False # count "good"? tiles
+count_oceanic_coasts = False # count coast tiles that are not next to land
 print_map = False
 export_map = True
 

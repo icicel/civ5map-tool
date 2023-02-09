@@ -7,6 +7,7 @@ specific_map = "drake-passage"
 print_map_info = True
 print_scenario_info = True
 count_cityable = True # count "good"? tiles
+count_oceanic_coasts = True # count coast tiles that are not next to land
 print_map = False
 export_map = True
 

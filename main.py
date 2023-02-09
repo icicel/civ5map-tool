@@ -107,6 +107,7 @@ for file in os.listdir(settings.import_path):
                 cells = place_coast(cells, [6], 0.5)
                 cells = place_coast(cells, [6], 0.75)
 
+        print(f"{was_changed}\t", end="")
         if settings.count_cityable:
             cityable = set()
             for coords, cell in cells.items():
@@ -139,9 +140,19 @@ for file in os.listdir(settings.import_path):
                 else:
                     continue
                 neighbors_of_cityable.add(coords)
-            print(f"{len(cityable) + len(neighbors_of_cityable)}\t{file}")
-        else:
-            print(f"{was_changed}\t{file}")
+            print(f"{len(cityable) + len(neighbors_of_cityable)}\t", end="")
+        elif settings.count_oceanic_coasts:
+            c = 0
+            for coords, cell in m.cells.items():
+                if cell[0] != 5:
+                    continue
+                for neighbor in get_neighbors(coords):
+                    if cells[neighbor][0] not in [5, 6]:
+                        break
+                else:
+                    c += 1
+            print(f"{c}\t", end="")
+        print(f"{file}")
 
         if settings.print_map:
             # grassland, plains, desert, tundra, snow, coast, ocean

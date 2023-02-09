@@ -74,13 +74,13 @@ for file in os.listdir(path):
         def get_neighbors(coords):
             x, y = coords
             if y % 2: # odd
-                neighbors = [(x+1, y), (x-1, y), (x, y+1), (x, y-1), (x+1, y+1), (x+1, y-1)]
+                possible = [(x+1, y), (x-1, y), (x, y+1), (x, y-1), (x+1, y+1), (x+1, y-1)]
             else: # even
-                neighbors = [(x+1, y), (x-1, y), (x, y+1), (x, y-1), (x-1, y+1), (x-1, y-1)]
-            return [n for n in neighbors if is_valid(n)]
+                possible = [(x+1, y), (x-1, y), (x, y+1), (x, y-1), (x-1, y+1), (x-1, y-1)]
+            return [(x % m.map_width, y % m.map_height) for x,y in possible if is_valid((x,y))]
         def is_valid(coords):
             x, y = coords
-            return x >= 0 and y >= 0 and x < m.map_width and y < m.map_height
+            return x >= 0 and y >= 0 and x < m.map_width and y < m.map_height or m.world_wrap
             
         if settings.minimal_coasts:
             def place_coast(cells, filter, chance_for_ocean):

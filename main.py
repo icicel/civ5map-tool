@@ -1,6 +1,6 @@
 
 import os, random, decodemap, settings
-c = 0
+oceanic_coasts_c = 0
 
 for file in os.listdir(settings.import_path):
     if file[-8:] != ".Civ5Map":
@@ -81,33 +81,6 @@ for file in os.listdir(settings.import_path):
             x, y = coords
             return x >= 0 and y >= 0 and x < m.map_width and y < m.map_height or m.world_wrap
             
-        if settings.minimal_coasts:
-            def place_coast(cells, filter, chance_for_ocean):
-                new_cells = {}
-                for coords, cell in cells.items():
-                    terrain, *other = cell
-                    if terrain not in filter:
-                        new_cells[coords] = cell
-                        continue
-                    for n in get_neighbors(coords):
-                        if cells[n][0] not in filter:
-                            break
-                    else:
-                        new_cells[coords] = (6, *other)
-                        continue
-                    if random.random() < chance_for_ocean:
-                        new_cells[coords] = (6, *other)
-                        continue
-                    new_cells[coords] = (5, *other)
-                return new_cells
-            cells = place_coast(cells, [5, 6], 0)
-            if settings.double_minimal_coasts:
-                cells = place_coast(cells, [6], 0)
-            if settings.random_coasts:
-                cells = place_coast(cells, [6], 0.5)
-                cells = place_coast(cells, [6], 0.75)
-
-        print(f"{was_changed}\t", end="")
         if settings.count_cityable:
             cityable = set()
             for coords, cell in cells.items():
@@ -140,9 +113,8 @@ for file in os.listdir(settings.import_path):
                 else:
                     continue
                 neighbors_of_cityable.add(coords)
-            print(f"{len(cityable) + len(neighbors_of_cityable)}\t", end="")
-        elif settings.count_oceanic_coasts:
-            c = 0
+        elif settings.count_oceanic_coasts or settings.minimal_coasts:
+            oceanic_coasts_c = 0
             for coords, cell in m.cells.items():
                 if cell[0] != 5:
                     continue
@@ -150,8 +122,44 @@ for file in os.listdir(settings.import_path):
                     if cells[neighbor][0] not in [5, 6]:
                         break
                 else:
-                    c += 1
-            print(f"{c}\t", end="")
+                    oceanic_coasts_c += 1
+                    
+        if settings.minimal_coasts:
+            # Minimal coasts essentially sets the number of oceanic coasts to 0
+            if oceanic_coasts_c:
+                was_changed = True
+            def place_coast(cells, filter, chance_for_ocean):
+                new_cells = {}
+                for coords, cell in cells.items():
+                    terrain, *other = cell
+                    if terrain not in filter:
+                        new_cells[coords] = cell
+                        continue
+                    for n in get_neighbors(coords):
+                        if cells[n][0] not in filter:
+                            break
+                    else:
+                        new_cells[coords] = (6, *other)
+                        continue
+                    if random.random() < chance_for_ocean:
+                        new_cells[coords] = (6, *other)
+                        continue
+                    new_cells[coords] = (5, *other)
+                return new_cells
+            cells = place_coast(cells, [5, 6], 0)
+            if settings.double_minimal_coasts:
+                cells = place_coast(cells, [6], 0)
+                was_changed = True
+            if settings.random_coasts:
+                cells = place_coast(cells, [6], 0.5)
+                cells = place_coast(cells, [6], 0.75)
+                was_changed = True
+
+        print(f"{was_changed}\t", end="")
+        if settings.count_cityable:
+            print(f"{len(cityable) + len(neighbors_of_cityable)}\t", end="")
+        if settings.count_oceanic_coasts:
+            print(f"{oceanic_coasts_c}\t", end="")
         print(f"{file}")
 
         if settings.print_map:

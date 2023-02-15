@@ -17,7 +17,46 @@ def pad_to_length(byte_string, length):
 
 # File handler (I think)
 
-class DecodeMap:
+class MapFile:
+    is_scenario: bool
+    version: int
+    map_width: int
+    map_height: int
+    num_players: int
+    world_wrap: bool
+    random_resources: bool
+    random_goodies: bool
+    terrains: "list[bytes]"
+    features: "list[bytes]"
+    wonders: "list[bytes]"
+    resources: "list[bytes]"
+    mod_data: "list[bytes]"
+    title: bytes
+    description: bytes
+    world_size: bytes
+    cells: "dict[tuple[int, int], tuple[int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int]]"
+    game_speed: bytes
+    max_turns: int
+    start_year: int
+    num_player_civs: int
+    num_minor_civs: int
+    num_teams: int
+    improvements: "list[bytes]"
+    unit_types: "list[bytes]"
+    techs: "list[bytes]"
+    policies: "list[bytes]"
+    buildings: "list[bytes]"
+    promotions: "list[bytes]"
+    units: "list[tuple[int, int, int, int, int, int, int, bytes]]"
+    unit_names: "list[str]"
+    cities: "list[tuple[str, int, int, int, int, bytes]]"
+    victory_data: "list[tuple[int, bytes]]"
+    game_options: "list[tuple[int, bytes]]"
+    padding_length: int
+    teams: "list[str]"
+    players: "list[tuple[bytes, str, str, str, str, str, str, int, int, tuple[int, int], int, int]]"
+
+
     def __init__(self, f):
 
         ### Read map data
@@ -286,7 +325,7 @@ class DecodeMap:
 
 
 
-    def encode(self):
+    def asBytes(self) -> bytes:
 
         f = []
 

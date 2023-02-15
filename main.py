@@ -1,5 +1,5 @@
 
-import os, random, decodemap, settings
+import os, random, mapfile, settings
 oceanic_coasts_c = 0
 
 for file in os.listdir(settings.import_path):
@@ -9,7 +9,7 @@ for file in os.listdir(settings.import_path):
         continue
     with open(settings.import_path + file, "rb") as f:
 
-        m = decodemap.DecodeMap(f)
+        m = mapfile.MapFile(f)
         was_changed = False
         
         if settings.print_map_info:
@@ -219,6 +219,6 @@ for file in os.listdir(settings.import_path):
             continue
         
         m.cells = cells
-        mf = m.encode()
+        mf = m.asBytes()
         with open(settings.export_path + file, "wb") as f:
             f.write(mf)

@@ -1,6 +1,4 @@
-
 import os, random, mapfile, settings
-oceanic_coasts_c = 0
 
 for file in os.listdir(settings.import_path):
     if file[-8:] != ".Civ5Map":

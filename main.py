@@ -74,10 +74,10 @@ for file in os.listdir(settings.import_path):
                 possible = [(x+1, y), (x-1, y), (x, y+1), (x, y-1), (x+1, y+1), (x+1, y-1)]
             else: # even
                 possible = [(x+1, y), (x-1, y), (x, y+1), (x, y-1), (x-1, y+1), (x-1, y-1)]
-            return [(x % m.map_width, y % m.map_height) for x,y in possible if is_valid((x,y))]
+            return [(x % m.map_width, y) for x,y in possible if is_valid((x,y))]
         def is_valid(coords):
             x, y = coords
-            return x >= 0 and y >= 0 and x < m.map_width and y < m.map_height or m.world_wrap
+            return (x >= 0 and x < m.map_width or m.world_wrap) and y >= 0 and y < m.map_height
             
         if settings.count_cityable:
             cityable = set()
